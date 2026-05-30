@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilight Reset - ADHD Sleep & Night Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        /* DARK MODE AESTHETIC */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0B0F19; /* Deep Space Black */
+            color: #E2E8F0; /* Soft Slate Text */
+        }
+        
+        .heading-font {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Twilight Soft-Brutalism Aesthetics (Dark Mode) */
+        .twilight-card {
+            background-color: #1E293B; /* Slate 800 */
+            border: 2px solid #818CF8; /* Indigo 400 */
+            box-shadow: 4px 4px 0px 0px #4F46E5; /* Indigo 600 Shadow */
+            border-radius: 24px;
+            transition: all 0.2s ease;
+        }
+        .twilight-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #4F46E5;
+        }
+
+        .twilight-btn {
+            border: 2px solid #818CF8;
+            box-shadow: 3px 3px 0px 0px #4F46E5;
+            transition: all 0.1s ease;
+        }
+        .twilight-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px #4F46E5;
+        }
+
+        /* Inputs in dark mode */
+        input, select, textarea {
+            background-color: #0F172A;
+            color: #E2E8F0;
+            border-color: #4F46E5;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #A5B4FC;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0B0F19; }
+        ::-webkit-scrollbar-thumb { background: #4F46E5; border-radius: 4px; }
+        
+        /* Mobile Overlay */
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(11, 15, 25, 0.7); z-index: 40; display: none; }
+        .sidebar-overlay.active { display: block; }
+        
+        /* Glowing Star Animation */
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        .star-glow { animation: twinkle 3s infinite ease-in-out; }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: #818CF8; color: #0B0F19;
+            padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 14px; z-index: 9999;
+            animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
+            box-shadow: 4px 4px 0px 0px #4F46E5;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+    </style>
+</head>
+<body class="antialiased min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- SOFT SYNTH SOUNDS (Nighttime Vibe) ---
+        let audioCtx = null;
+        let deltaNode = null;
+        let breezeNode = null;
+        let isMuted = false;
+
+        const initAudio = () => {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        };
+
+        const playSound = (type = 'click') => {
+            if (isMuted) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                
+                if (type === 'click') {
+                    // Soft muffled click for night time
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.05);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now); osc.stop(now + 0.05);
+                } else if (type === 'check') {
+                    // Soft sleepy bell
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(660, now + 0.05);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                } else if (type === 'delete') {
+                    // Low sweep
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(50, now + 0.15);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.start(now); osc.stop(now + 0.15);
+                }
+            } catch (e) {}
+        };
+
+        // Deep Sleep Delta Waves (Binaural effect simulation)
+        const startDeltaWaves = () => {
+            try {
+                initAudio();
+                if (deltaNode) return;
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                // Extremely low frequency (pulsing effect using a tremolo setup)
+                osc.type = 'sine';
+                osc.frequency.value = 100; // Base tone
+
+                // LFO to create the "wub wub" Delta wave pulse (approx 2Hz)
+                const lfo = audioCtx.createOscillator();
+                lfo.type = 'sine';
+                lfo.frequency.value = 2; 
+                
+                const lfoGain = audioCtx.createGain();
+                lfoGain.gain.value = 0.03; // Depth of the pulse
+
+                lfo.connect(lfoGain);
+                lfoGain.connect(gain.gain); // Modulate the volume
+
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime); // Base volume
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                lfo.start();
+                deltaNode = { osc, lfo, gain };
+            } catch(e) {}
+        };
+
+        const stopDeltaWaves = () => {
+            if (deltaNode) {
+                try { deltaNode.osc.stop(); deltaNode.lfo.stop(); } catch(e){}
+                deltaNode = null;
+            }
+        };
+
+        // Night Breeze (Filtered Pink Noise)
+        const startNightBreeze = () => {
+            try {
+                initAudio();
+                if (breezeNode) return;
+                
+                const bufferSize = 2 * audioCtx.sampleRate;
+                const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                let b0=0, b1=0, b2=0, b3=0, b4=0, b5=0, b6=0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    b0 = 0.99886 * b0 + white * 0.0555179;
+                    b1 = 0.99332 * b1 + white * 0.0750759;
+                    b2 = 0.96900 * b2 + white * 0.1538520;
+                    b3 = 0.86650 * b3 + white * 0.3104856;
+                    b4 = 0.55000 * b4 + white * 0.5329522;
+                    b5 = -0.7616 * b5 - white * 0.0168980;
+                    output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+                    output[i] *= 0.11;
+                    b6 = white * 0.115926;
+                }
+                const noiseSource = audioCtx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                noiseSource.loop = true;
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 300; // Deep wind
+
+                // LFO for wind gusting
+                const lfo = audioCtx.createOscillator();
+                lfo.frequency.value = 0.1; // Slow gusts
+                const lfoGain = audioCtx.createGain();
+                lfoGain.gain.value = 100;
+                lfo.connect(lfoGain);
+                lfoGain.connect(filter.frequency);
+
+                const mainGain = audioCtx.createGain();
+                mainGain.gain.value = 0.15;
+
+                noiseSource.connect(filter);
+                filter.connect(mainGain);
+                mainGain.connect(audioCtx.destination);
+                
+                noiseSource.start();
+                lfo.start();
+                breezeNode = { source: noiseSource, lfo };
+            } catch(e) {}
+        };
+
+        const stopNightBreeze = () => {
+            if (breezeNode) {
+                try { breezeNode.source.stop(); breezeNode.lfo.stop(); } catch(e){}
+                breezeNode = null;
+            }
+        };
+
+        const showToast = (message) => {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        const exportScreenshot = async (elementId, filename) => {
+            try {
+                showToast("📸 Capturing the stars...");
+                playSound('click');
+                const element = document.getElementById(elementId);
+                const canvas = await html2canvas(element, { backgroundColor: '#0B0F19', scale: 2 });
+                const link = document.createElement('a');
+                link.download = filename || 'twilight_reset.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch(e) { showToast("❌ Export failed."); }
+        };
+
+        // --- DEFAULT STATE ---
+        const defaultState = {
+            windDownRoutine: [
+                { id: "1", text: "Dim screens & turn on Night Shift", done: false },
+                { id: "2", text: "Plug phone charger ACROSS the room", done: false },
+                { id: "3", text: "Wash face / Brush teeth", done: false },
+                { id: "4", text: "Read 1 page of a book (No doomscrolling)", done: false }
+            ],
+            brainDrop: "Thoughts racing... Did I reply to my boss?\nI need to buy eggs tomorrow.\nWhy did I say that embarrassing thing 5 years ago?",
+            dreams: [
+                { id: "1", date: "June 1, 2026", sleepQuality: 4, text: "Dreamt I was flying over a matcha ocean. Woke up feeling pretty rested." }
+            ],
+            audioToggles: { delta: false, breeze: false }
+        };
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('twilight_sleep_state');
+                return saved ? JSON.parse(saved) : defaultState;
+            });
+
+            const [activeTab, setActiveTab] = React.useState("winddown");
+            const [sidebarOpen, setSidebarOpen] = React.useState(window.innerWidth > 768);
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+            const [soundOn, setSoundOn] = React.useState(true);
+
+            React.useEffect(() => {
+                localStorage.setItem('twilight_sleep_state', JSON.stringify(state));
+                isMuted = !soundOn;
+            }, [state, soundOn]);
+
+            // Handle Audio
+            React.useEffect(() => {
+                if (state.audioToggles.delta) startDeltaWaves();
+                else stopDeltaWaves();
+            }, [state.audioToggles.delta]);
+
+            React.useEffect(() => {
+                if (state.audioToggles.breeze) startNightBreeze();
+                else stopNightBreeze();
+            }, [state.audioToggles.breeze]);
+
+            const handleTabSelect = (tabId) => {
+                playSound('click');
+                setActiveTab(tabId);
+                setMobileMenuOpen(false);
+            };
+
+            const toggleAudio = (type) => {
+                playSound('click');
+                setState({
+                    ...state,
+                    audioToggles: { ...state.audioToggles, [type]: !state.audioToggles[type] }
+                });
+            };
+
+            const tabs = [
+                { id: "winddown", label: "Wind-Down Flow", icon: "🌙", color: "bg-[#3730A3]" },
+                { id: "braindrop", label: "Midnight Brain Drop", icon: "🧠", color: "bg-[#4338CA]" },
+                { id: "dreams", label: "Dream Vault", icon: "🌌", color: "bg-[#312E81]" },
+                { id: "lullaby", label: "Sleep Soundscape", icon: "🎵", color: "bg-[#1E1B4B]" }
+            ];
+
+            return (
+                <div class="flex h-screen overflow-hidden relative">
+                    
+                    {/* Mobile Overlay */}
+                    <div class={`sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
+
+                    {/* --- SIDEBAR --- */}
+                    <div class={`h-full border-r-2 border-[#3730A3] bg-[#0F172A] transition-all duration-300 flex flex-col z-50 
+                        ${window.innerWidth <= 768 ? (mobileMenuOpen ? 'fixed inset-y-0 left-0 w-72' : 'fixed -translate-x-full w-72') : (sidebarOpen ? 'w-80' : 'w-20')}`}>
+                        
+                        <div class="p-5 border-b-2 border-[#3730A3] flex items-center justify-between bg-[#0B0F19]">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl star-glow">🌌</span>
+                                {(sidebarOpen || mobileMenuOpen) && (
+                                    <div>
+                                        <h1 class="heading-font font-black text-xl text-[#A5B4FC] tracking-tight">TWILIGHT RESET</h1>
+                                        <p class="text-[10px] font-bold text-[#818CF8] uppercase tracking-widest">Sleep Planner</p>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={() => { playSound(); if(window.innerWidth > 768) setSidebarOpen(!sidebarOpen); else setMobileMenuOpen(false); }} class="p-1.5 twilight-btn bg-[#1E293B] rounded-lg hidden md:block text-[#A5B4FC]">
+                                {sidebarOpen ? "◀" : "▶"}
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => handleTabSelect(tab.id)}
+                                    class={`w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[#818CF8] text-left font-bold transition-all text-[#E2E8F0] ${
+                                        activeTab === tab.id ? `${tab.color} translate-x-1 shadow-[3px_3px_0px_0px_#4F46E5]` : 'bg-[#1E293B] hover:bg-[#312E81]'
+                                    }`}
+                                >
+                                    <span class="text-2xl">{tab.icon}</span>
+                                    {(sidebarOpen || mobileMenuOpen) && <span class="text-sm">{tab.label}</span>}
+                                </button>
+                            ))}
+                        </div>
+
+                        {(sidebarOpen || mobileMenuOpen) && (
+                            <div class="p-4 border-t-2 border-[#3730A3] bg-[#0F172A] space-y-2">
+                                <button onClick={() => { playSound(); setSoundOn(!soundOn); }} class="w-full text-xs py-3 bg-[#1E293B] text-[#A5B4FC] rounded-xl border-2 border-[#818CF8] font-bold twilight-btn hover:bg-[#312E81] transition-colors">
+                                    {soundOn ? "🔊 Sounds Active" : "🔇 Sounds Muted"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* --- MAIN CONTENT --- */}
+                    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#0B0F19]">
+                        
+                        <header class="p-4 border-b-2 border-[#3730A3] bg-[#0F172A] flex items-center justify-between md:hidden">
+                            <button onClick={() => {playSound(); setMobileMenuOpen(true);}} class="p-2 twilight-btn bg-[#1E293B] rounded-xl border-2 border-[#818CF8] font-bold text-[#E2E8F0]">
+                                🍔 Menu
+                            </button>
+                            <span class="heading-font font-black text-lg tracking-tight text-[#A5B4FC]">TWILIGHT RESET</span>
+                        </header>
+
+                        <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                            {activeTab === "winddown" && <WindDownView state={state} setState={setState} />}
+                            {activeTab === "braindrop" && <BrainDropView state={state} setState={setState} />}
+                            {activeTab === "dreams" && <DreamVaultView state={state} setState={setState} />}
+                            {activeTab === "lullaby" && <LullabyView state={state} toggleAudio={toggleAudio} />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 1. WIND-DOWN FLOW (Block Revenge Procrastination)
+        // ==========================================
+        function WindDownView({ state, setState }) {
+            const [newItem, setNewItem] = React.useState("");
+
+            const toggleCheck = (id, currentStatus) => {
+                playSound('check');
+                setState({ ...state, windDownRoutine: state.windDownRoutine.map(g => g.id === id ? { ...g, done: !currentStatus } : g) });
+            };
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newItem) return;
+                playSound('click');
+                setState({ ...state, windDownRoutine: [...state.windDownRoutine, { id: Date.now().toString(), text: newItem, done: false }] });
+                setNewItem("");
+            };
+
+            const handleDelete = (id) => {
+                playSound('delete');
+                setState({ ...state, windDownRoutine: state.windDownRoutine.filter(g => g.id !== id) });
+            };
+            
+            const resetRoutine = () => {
+                playSound('delete');
+                setState({ ...state, windDownRoutine: state.windDownRoutine.map(t => ({ ...t, done: false })) });
+            };
+
+            const allDone = state.windDownRoutine.length > 0 && state.windDownRoutine.every(t => t.done);
+
+            return (
+                <div id="view-winddown" class="space-y-6 max-w-4xl mx-auto">
+                    <div class="twilight-card p-6 md:p-8 bg-[#1E1B4B] flex flex-col md:flex-row md:items-center justify-between gap-4 border-[#818CF8]">
+                        <div>
+                            <h2 class="heading-font text-3xl md:text-4xl font-black text-[#E0E7FF]">Wind-Down Flow 🌙</h2>
+                            <p class="font-semibold text-[#A5B4FC] mt-2">Defeat Revenge Bedtime Procrastination. Check off these steps to safely detach from your phone.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onClick={resetRoutine} class="px-4 py-2 bg-transparent border-2 border-[#818CF8] text-[#818CF8] rounded-xl font-bold text-xs twilight-btn hover:bg-[#312E81]">Reset</button>
+                            <button onClick={() => exportScreenshot('view-winddown', 'night_routine.png')} class="px-5 py-2.5 bg-[#4F46E5] text-white border-2 border-[#818CF8] rounded-xl font-bold text-sm twilight-btn">
+                                📸 Share Routine
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="twilight-card p-6 bg-[#0F172A] space-y-4">
+                        <form onSubmit={handleAdd} class="flex gap-2">
+                            <input type="text" value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="Add a bedtime step (e.g. Read 5 pages)" class="flex-1 p-4 border-2 border-[#4F46E5] rounded-2xl font-bold text-base focus:outline-none bg-[#1E293B] text-white" />
+                            <button type="submit" class="px-6 py-4 bg-[#6366F1] text-white border-2 border-[#818CF8] rounded-2xl font-black text-xl twilight-btn">+</button>
+                        </form>
+
+                        <div class="space-y-3 pt-4">
+                            {allDone && (
+                                <div class="p-6 text-center bg-[#312E81] border-2 border-[#818CF8] rounded-2xl font-bold text-[#E0E7FF] star-glow">
+                                    🌟 All steps complete. The phone is a brick now. Time to sleep!
+                                </div>
+                            )}
+
+                            {state.windDownRoutine.map(item => (
+                                <div key={item.id} class={`flex items-center justify-between p-4 border-2 border-[#4F46E5] rounded-2xl transition-colors ${item.done ? 'bg-[#1E1B4B] opacity-60' : 'bg-[#1E293B]'}`}>
+                                    <div class="flex items-center gap-4 cursor-pointer flex-1" onClick={() => toggleCheck(item.id, item.done)}>
+                                        <div class={`w-8 h-8 rounded-xl border-2 border-[#818CF8] flex items-center justify-center font-bold text-lg ${item.done ? 'bg-[#818CF8] text-[#0F172A]' : 'bg-transparent'}`}>
+                                            {item.done ? "✓" : ""}
+                                        </div>
+                                        <span class={`font-bold text-base md:text-lg ${item.done ? 'line-through text-slate-500' : 'text-[#E2E8F0]'}`}>{item.text}</span>
+                                    </div>
+                                    <button onClick={() => handleDelete(item.id)} class="text-[#818CF8] text-xl font-bold hover:text-rose-400 px-3">×</button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 2. MIDNIGHT BRAIN DROP (Clear the cache)
+        // ==========================================
+        function BrainDropView({ state, setState }) {
+            const handleClear = () => {
+                playSound('delete');
+                setState({ ...state, brainDrop: "" });
+                showToast("Brain cache cleared! 🌌");
+            };
+
+            return (
+                <div class="space-y-6 max-w-4xl mx-auto h-[80vh] flex flex-col">
+                    <div class="twilight-card p-6 bg-[#312E81] rounded-3xl border-[#818CF8]">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="heading-font text-3xl font-black text-white">Midnight Brain Drop 🧠</h2>
+                                <p class="font-semibold text-[#A5B4FC] mt-2">Can't sleep because of racing thoughts? Dump them all here. We'll hold onto them so your brain doesn't have to.</p>
+                            </div>
+                            <button onClick={handleClear} class="px-4 py-2 bg-rose-900 text-rose-200 border-2 border-rose-500 rounded-xl font-bold text-xs twilight-btn">
+                                Flush Cache 🗑️
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="twilight-card p-6 bg-[#0F172A] flex-1 flex flex-col">
+                        <textarea 
+                            value={state.brainDrop}
+                            onChange={e => setState({ ...state, brainDrop: e.target.value })}
+                            placeholder="Type everything keeping you awake. Errands, embarrassing memories, brilliant ideas..."
+                            class="w-full flex-1 p-6 border-2 border-[#4F46E5] rounded-2xl font-semibold text-base focus:outline-none bg-[#1E293B] text-[#E2E8F0] resize-none"
+                        ></textarea>
+                        <p class="text-center text-[#818CF8] text-xs font-bold mt-4 uppercase tracking-widest">Auto-saved to Local Device. 100% Private.</p>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 3. DREAM VAULT & SLEEP TRACKER
+        // ==========================================
+        function DreamVaultView({ state, setState }) {
+            const [newDream, setNewDream] = React.useState("");
+            const [sleepQuality, setSleepQuality] = React.useState(3);
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newDream) return;
+                playSound('success');
+                const today = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                setState({ 
+                    ...state, 
+                    dreams: [{ id: Date.now().toString(), date: today, sleepQuality, text: newDream }, ...state.dreams] 
+                });
+                setNewDream("");
+            };
+
+            const handleDelete = (id) => {
+                playSound('delete');
+                setState({ ...state, dreams: state.dreams.filter(d => d.id !== id) });
+            };
+
+            return (
+                <div class="space-y-6 max-w-4xl mx-auto">
+                    <div class="twilight-card p-6 bg-[#4338CA] rounded-3xl border-[#A5B4FC]">
+                        <h2 class="heading-font text-3xl font-black text-white">Dream Vault 🌌</h2>
+                        <p class="font-semibold text-[#C7D2FE] mt-2">Track how well you slept (no judgment) and log your wild ADHD dreams before they fade away.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="twilight-card p-6 bg-[#0F172A] space-y-4 h-fit">
+                            <h3 class="font-extrabold text-lg text-white">➕ Morning Log</h3>
+                            <form onSubmit={handleAdd} class="space-y-4">
+                                <div>
+                                    <label class="text-xs font-bold block mb-2 text-[#A5B4FC]">Sleep Quality Vibe (1-5 🌟)</label>
+                                    <div class="flex items-center gap-1">
+                                        {[1, 2, 3, 4, 5].map(num => (
+                                            <button 
+                                                key={num} type="button" onClick={() => { playSound('click'); setSleepQuality(num); }}
+                                                class={`flex-1 py-2 text-sm border-2 border-[#4F46E5] rounded-lg font-bold twilight-btn transition-all ${sleepQuality >= num ? 'bg-[#FDE047] text-slate-900 border-[#FDE047]' : 'bg-[#1E293B] text-slate-500'}`}
+                                            >🌟</button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold block mb-2 text-[#A5B4FC]">What did you dream about?</label>
+                                    <textarea 
+                                        value={newDream} onChange={e => setNewDream(e.target.value)} 
+                                        placeholder="I was running through a mall but my legs were heavy..." 
+                                        class="w-full h-32 p-3 border-2 border-[#4F46E5] rounded-xl text-sm bg-[#1E293B] text-white resize-none" 
+                                    />
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-[#818CF8] text-[#0F172A] border-2 border-[#A5B4FC] rounded-xl font-bold twilight-btn text-sm">Save Log 📓</button>
+                            </form>
+                        </div>
+
+                        <div class="lg:col-span-2 twilight-card p-6 bg-[#0F172A] space-y-4">
+                            <h3 class="font-extrabold text-lg text-white">🗄️ Your Sleep Archive</h3>
+                            {state.dreams.length === 0 ? (
+                                <div class="p-8 text-center bg-[#1E293B] border-2 border-dashed border-[#4F46E5] rounded-2xl font-bold text-[#818CF8]">No entries yet. Sleep tight tonight!</div>
+                            ) : (
+                                <div class="space-y-3">
+                                    {state.dreams.map(dream => (
+                                        <div key={dream.id} class="p-4 border-2 border-[#4F46E5] rounded-xl bg-[#1E293B] relative">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <span class="text-xs font-bold text-[#A5B4FC]">{dream.date}</span>
+                                                    <div class="text-sm mt-1">{"🌟".repeat(dream.sleepQuality)}</div>
+                                                </div>
+                                                <button onClick={() => handleDelete(dream.id)} class="text-rose-400 hover:text-rose-500">×</button>
+                                            </div>
+                                            <p class="text-sm font-semibold text-[#E2E8F0] leading-relaxed">"{dream.text}"</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 4. LULLABY SOUNDSCAPE (Web Audio API Synth)
+        // ==========================================
+        function LullabyView({ state, toggleAudio }) {
+            return (
+                <div class="space-y-6 max-w-3xl mx-auto text-center mt-10">
+                    <div class="text-7xl mb-4 star-glow">🎵</div>
+                    <h2 class="heading-font text-4xl font-black text-white">Sleep Soundscape</h2>
+                    <p class="font-semibold text-[#A5B4FC] max-w-lg mx-auto">Block out the silence. Generate soothing, infinite ambient noises offline using the Web Audio API.</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
+                        {/* Delta Waves */}
+                        <div class="twilight-card p-8 bg-[#0F172A] border-[#818CF8] flex flex-col items-center justify-center space-y-4">
+                            <div class="text-4xl">📻</div>
+                            <h3 class="font-extrabold text-white text-lg">Deep Delta Waves</h3>
+                            <p class="text-xs text-[#818CF8]">A low, pulsing hum designed to simulate deep sleep brainwaves.</p>
+                            <button 
+                                onClick={() => toggleAudio('delta')}
+                                class={`w-full py-4 mt-4 rounded-full font-black text-sm twilight-btn transition-colors ${state.audioToggles.delta ? 'bg-[#FDE047] text-[#0F172A] border-[#FDE047]' : 'bg-[#1E293B] text-white border-[#4F46E5]'}`}
+                            >
+                                {state.audioToggles.delta ? "⏸ PAUSE DELTA" : "▶ PLAY DELTA"}
+                            </button>
+                        </div>
+
+                        {/* Night Breeze */}
+                        <div class="twilight-card p-8 bg-[#0F172A] border-[#818CF8] flex flex-col items-center justify-center space-y-4">
+                            <div class="text-4xl">🍃</div>
+                            <h3 class="font-extrabold text-white text-lg">Midnight Breeze</h3>
+                            <p class="text-xs text-[#818CF8]">Filtered pink noise mimicking a gentle, continuous wind outside your window.</p>
+                            <button 
+                                onClick={() => toggleAudio('breeze')}
+                                class={`w-full py-4 mt-4 rounded-full font-black text-sm twilight-btn transition-colors ${state.audioToggles.breeze ? 'bg-[#FDE047] text-[#0F172A] border-[#FDE047]' : 'bg-[#1E293B] text-white border-[#4F46E5]'}`}
+                            >
+                                {state.audioToggles.breeze ? "⏸ PAUSE BREEZE" : "▶ PLAY BREEZE"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

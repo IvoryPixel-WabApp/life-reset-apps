@@ -1,0 +1,1333 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CozySpace - ADHD Dopamine-Infused Study Tracker</title>
+    <!-- Tailwind CSS for Modern Aesthetic layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel for JSX Compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- html2canvas for Exporting Aesthetic Shareables -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FAF6F0; /* Warm Cozy Cream background */
+        }
+        
+        .cozy-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Cozy Analog Shadow & Card Styles (Earthy Boho / Sage Green Aesthetics) */
+        .cozy-card {
+            background-color: #FFFFFF;
+            border: 2px solid #E6DFD5;
+            box-shadow: 0px 8px 24px rgba(95, 125, 103, 0.04);
+            border-radius: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cozy-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0px 12px 32px rgba(95, 125, 103, 0.08);
+        }
+
+        .cozy-btn {
+            border: 1px solid #E6DFD5;
+            transition: all 0.2s ease;
+        }
+        .cozy-btn:hover {
+            transform: scale(1.02);
+        }
+        .cozy-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Pulse animations for focus */
+        @keyframes gentle-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.03); opacity: 0.95; }
+        }
+        .focus-pulse {
+            animation: gentle-pulse 3s infinite ease-in-out;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF6F0;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D9D2C5;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        
+        // =========================================================================
+        //  COZY SYNTHESIZER SOUND ENGINE (No external audio files needed)
+        // =========================================================================
+        let audioCtx = null;
+        let birdsongNode = null;
+        let waterDropNode = null;
+
+        const initAudioContext = () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        };
+
+        // Play synthetic chime bell for XP points/success
+        const playDopamineDing = () => {
+            if (clickMuted) return;
+            try {
+                initAudioContext();
+                const now = audioCtx.currentTime;
+                
+                const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 (Positive Progression)
+                freqs.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+                    
+                    gain.gain.setValueAtTime(0.12, now + idx * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.5);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(now + idx * 0.06);
+                    osc.stop(now + idx * 0.06 + 0.6);
+                });
+            } catch (e) { }
+        };
+
+        // Play synth Level Up fan-fare
+        const playLevelUpFanfare = () => {
+            if (clickMuted) return;
+            try {
+                initAudioContext();
+                const now = audioCtx.currentTime;
+                const freqs = [261.63, 329.63, 392.00, 523.25, 659.25, 1046.50]; // Beautiful harmonic arpeggio
+                freqs.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.8);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.9);
+                });
+            } catch (e) { }
+        };
+
+        // Synthesise gentle birdsong chirps on-the-fly
+        const startBirdsongSynth = () => {
+            try {
+                initAudioContext();
+                if (birdsongNode) return;
+
+                const master = audioCtx.createGain();
+                master.gain.value = 0.18;
+                master.connect(audioCtx.destination);
+
+                const chirp = () => {
+                    if (!birdsongNode) return;
+                    const now = audioCtx.currentTime;
+                    const notes = [1568, 1760, 1396, 1976];
+                    const count = 2 + Math.floor(Math.random() * 3);
+
+                    for (let i = 0; i < count; i++) {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        const start = now + i * 0.095;
+                        const freq = notes[Math.floor(Math.random() * notes.length)];
+
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq * 0.92, start);
+                        osc.frequency.exponentialRampToValueAtTime(freq * 1.08, start + 0.055);
+                        gain.gain.setValueAtTime(0.001, start);
+                        gain.gain.exponentialRampToValueAtTime(0.16, start + 0.018);
+                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.13);
+
+                        osc.connect(gain);
+                        gain.connect(master);
+                        osc.start(start);
+                        osc.stop(start + 0.16);
+                    }
+                };
+
+                const interval = setInterval(chirp, 2100 + Math.random() * 1200);
+                birdsongNode = { master, interval };
+                chirp();
+            } catch (e) { }
+        };
+
+        const stopBirdsongSynth = () => {
+            if (birdsongNode) {
+                try {
+                    clearInterval(birdsongNode.interval);
+                    birdsongNode.master.disconnect();
+                } catch(e){}
+                birdsongNode = null;
+            }
+        };
+
+        // Synthesise soft water drops on-the-fly
+        const startWaterDropSynth = () => {
+            try {
+                initAudioContext();
+                if (waterDropNode) return;
+
+                const master = audioCtx.createGain();
+                master.gain.value = 0.22;
+                master.connect(audioCtx.destination);
+
+                const drop = () => {
+                    if (!waterDropNode) return;
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    const filter = audioCtx.createBiquadFilter();
+                    const startFreq = 760 + Math.random() * 420;
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(startFreq, now);
+                    osc.frequency.exponentialRampToValueAtTime(180 + Math.random() * 90, now + 0.23);
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 900;
+                    filter.Q.value = 6;
+                    gain.gain.setValueAtTime(0.001, now);
+                    gain.gain.exponentialRampToValueAtTime(0.2, now + 0.012);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(master);
+                    osc.start(now);
+                    osc.stop(now + 0.36);
+                };
+
+                const interval = setInterval(drop, 1300 + Math.random() * 900);
+                waterDropNode = { master, interval };
+                drop();
+            } catch (e) { }
+        };
+
+        const stopWaterDropSynth = () => {
+            if (waterDropNode) {
+                try {
+                    clearInterval(waterDropNode.interval);
+                    waterDropNode.master.disconnect();
+                } catch(e){}
+                waterDropNode = null;
+            }
+        };
+        let clickMuted = false;
+
+        const playDopamineClick = () => {
+            if (clickMuted) return;
+            try {
+                initAudioContext();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05);
+                
+                gain.gain.setValueAtTime(0.04, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } catch (e) { }
+        };
+
+
+        // =========================================================================
+        //  DEFAULT SYSTEM STATE & LOGIC
+        // =========================================================================
+        const initialTasks = [
+            { id: "1", title: "Complete chapter 4 study card notes", xpReward: 15, difficulty: "normal", completed: false },
+            { id: "2", title: "Draft outlines for Geography Project report", xpReward: 25, difficulty: "hard", completed: false },
+            { id: "3", title: "Review organic formulas 5 minutes", xpReward: 10, difficulty: "easy", completed: true }
+        ];
+
+        const initialHabits = [
+            { id: "1", label: "Hydrate (3 Water Bottles)", progress: [true, false, true, false, false, false, false] },
+            { id: "2", label: "5-Min Desk Stretching stretch", progress: [true, true, false, false, false, false, false] }
+        ];
+
+        const initialStudyTree = {
+            name: "Sprout",
+            level: 1,
+            xp: 35,
+            xpNeeded: 100,
+            growthStage: "seedling" // seedling -> sprout -> blossom -> mature
+        };
+
+        const defaultState = {
+            tasks: initialTasks,
+            habits: initialHabits,
+            studyTree: initialStudyTree,
+            brainDump: "Need to cancel Amazon membership later.\nIdeas for weekend vlog with friends.\nDid I reply to Emily?",
+            timeblocks: {
+                "08:00 - 10:00": "Deep Study session (Quiet focus)",
+                "10:00 - 12:00": "Break + Creative Brain Dump",
+                "12:00 - 14:00": "Lunch with family",
+                "14:00 - 16:00": "Review assignments & projects",
+                "16:00 - 18:00": "Free exploration time"
+            },
+            isMuteClick: false
+        };
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('adhd_study_state');
+                if (saved) {
+                    try { return JSON.parse(saved); } catch(e) { return defaultState; }
+                }
+                return defaultState;
+            });
+
+            const [activeTab, setActiveTab] = React.useState("dashboard");
+            const [isBirdsongActive, setIsBirdsongActive] = React.useState(false);
+            const [isWaterDropActive, setIsWaterDropActive] = React.useState(false);
+            
+            // Pomodoro states
+            const [timerMode, setTimerMode] = React.useState("focus"); 
+            const [timeLeft, setTimeLeft] = React.useState(1500); 
+            const [isTimerRunning, setIsTimerRunning] = React.useState(false);
+
+            // Task shrinker utility state
+            const [scaryTask, setScaryTask] = React.useState("");
+            const [shrunkSteps, setShrunkSteps] = React.useState([]);
+
+            // Mobile menu drawer state
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
+            // Brain dump drawer state
+            const [drawerOpen, setDrawerOpen] = React.useState(false);
+
+            // Save state automatic trigger
+            React.useEffect(() => {
+                localStorage.setItem('adhd_study_state', JSON.stringify(state));
+                clickMuted = !!state.isMuteClick;
+            }, [state]);
+
+            // Audio effects controller
+            React.useEffect(() => {
+                if (isBirdsongActive) {
+                    startBirdsongSynth();
+                } else {
+                    stopBirdsongSynth();
+                }
+            }, [isBirdsongActive]);
+
+            React.useEffect(() => {
+                if (isWaterDropActive) {
+                    startWaterDropSynth();
+                } else {
+                    stopWaterDropSynth();
+                }
+            }, [isWaterDropActive]);
+
+            // Pomodoro countdown clock trigger loop
+            React.useEffect(() => {
+                let timer = null;
+                if (isTimerRunning && timeLeft > 0) {
+                    timer = setInterval(() => {
+                        setTimeLeft(prev => prev - 1);
+                    }, 1000);
+                } else if (timeLeft === 0) {
+                    handleTimerEnd();
+                }
+                return () => clearInterval(timer);
+            }, [isTimerRunning, timeLeft]);
+
+            const handleTimerEnd = () => {
+                setIsTimerRunning(false);
+                if (timerMode === "focus") {
+                    gainXP(20); // Focus rewards 20 XP!
+                    alert("Focus session complete! Your plant companion gained +20 XP. Take a short breather! ");
+                    switchTimerMode("shortBreak");
+                } else {
+                    alert("Break over! Ready to lock back in?");
+                    switchTimerMode("focus");
+                }
+            };
+
+            const switchTimerMode = (mode) => {
+                setIsTimerRunning(false);
+                setTimerMode(mode);
+                if (mode === "focus") setTimeLeft(1500); // 25 mins
+                if (mode === "shortBreak") setTimeLeft(300); // 5 mins
+                if (mode === "longBreak") setTimeLeft(900); // 15 mins
+            };
+
+            const toggleTimer = () => {
+                initAudioContext();
+                playDopamineDing();
+                setIsTimerRunning(!isTimerRunning);
+            };
+
+            const resetTimer = () => {
+                playDopamineDing();
+                setIsTimerRunning(false);
+                switchTimerMode(timerMode);
+            };
+
+            // Task Shrinker logic
+            const handleTaskShrink = (e) => {
+                e.preventDefault();
+                if (!scaryTask.trim()) return;
+                playDopamineDing();
+                
+                const task = scaryTask.trim();
+                const steps = [
+                    `Sit down and open your study app or files for: "${task}" (1 min)`,
+                    `Write just ONE sentence or read just ONE key paragraph (Super low pressure!)`,
+                    `Draft a rough, imperfect outline (Give yourself permission to make a messy first draft)`
+                ];
+                setShrunkSteps(steps);
+            };
+
+            const adoptShrunkTask = () => {
+                if (shrunkSteps.length === 0) return;
+                playDopamineDing();
+
+                const formattedTasks = shrunkSteps.map((step, idx) => ({
+                    id: `${Date.now()}-${idx}`,
+                    title: `${step}`,
+                    xpReward: 10,
+                    difficulty: "easy",
+                    completed: false
+                }));
+
+                setState({
+                    ...state,
+                    tasks: [...state.tasks, ...formattedTasks]
+                });
+                
+                setScaryTask("");
+                setShrunkSteps([]);
+                alert("Micro-steps successfully added to your Quest Board! You can crush these! ");
+            };
+
+            // Game Logic: Gain experience points
+            const gainXP = (amount) => {
+                let currentXP = state.studyTree.xp + amount;
+                let level = state.studyTree.level;
+                let needed = state.studyTree.xpNeeded;
+                let growth = state.studyTree.growthStage;
+
+                if (currentXP >= needed) {
+                    currentXP = currentXP - needed;
+                    level += 1;
+                    needed = Math.round(needed * 1.25);
+                    
+                    if (level >= 8) growth = "mature";
+                    else if (level >= 5) growth = "blossom";
+                    else if (level >= 3) growth = "sprout";
+
+                    setTimeout(() => {
+                        playLevelUpFanfare();
+                        alert(` CONGRATS! Your pet companion Sprout grew to Level ${level}! `);
+                    }, 100);
+                } else {
+                    playDopamineDing();
+                }
+
+                setState(prev => ({
+                    ...prev,
+                    studyTree: {
+                        ...prev.studyTree,
+                        xp: currentXP,
+                        level: level,
+                        xpNeeded: needed,
+                        growthStage: growth
+                    }
+                }));
+            };
+
+            // Task Actions
+            const toggleTaskCompleted = (id, completed, reward) => {
+                if (!completed) {
+                    gainXP(reward);
+                } else {
+                    playDopamineDing();
+                }
+                setState(prev => ({
+                    ...prev,
+                    tasks: prev.tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
+                }));
+            };
+
+            const handleAddTask = (title, difficulty) => {
+                let xp = 10;
+                if (difficulty === "normal") xp = 15;
+                if (difficulty === "hard") xp = 25;
+
+                setState(prev => ({
+                    ...prev,
+                    tasks: [
+                        ...prev.tasks,
+                        { id: Date.now().toString(), title, xpReward: xp, difficulty, completed: false }
+                    ]
+                }));
+                gainXP(5); 
+            };
+
+            const handleDeleteTask = (id) => {
+                playDopamineDing();
+                setState(prev => ({
+                    ...prev,
+                    tasks: prev.tasks.filter(t => t.id !== id)
+                }));
+            };
+
+            // Reset Section Utilities
+            const handleResetSection = (section) => {
+                if (confirm(`Reset current section data? This only wipes the selected section.`)) {
+                    playDopamineDing();
+                    if (section === "tasks") {
+                        setState(prev => ({ ...prev, tasks: [] }));
+                    } else if (section === "habits") {
+                        setState(prev => ({ ...prev, habits: [] }));
+                    } else if (section === "timeblocks") {
+                        setState(prev => ({ ...prev, timeblocks: {} }));
+                    }
+                }
+            };
+
+            const handleFullWipe = () => {
+                if (confirm(" ๏ธ Are you sure you want to completely reset this study app? This wipes all leveling history!")) {
+                    setState(defaultState);
+                    localStorage.removeItem('adhd_study_state');
+                }
+            };
+
+            // Export layout as PNG Shareable
+            const exportAestheticCard = (elementId, filename) => {
+                playDopamineDing();
+                const element = document.getElementById(elementId);
+                if (element) {
+                    html2canvas(element, {
+                        backgroundColor: '#FAF6F0',
+                        scale: 2,
+                        logging: false
+                    }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = `${filename}.png`;
+                        link.href = canvas.toDataURL();
+                        link.click();
+                    });
+                }
+            };
+
+            const formatTime = (secs) => {
+                const m = Math.floor(secs / 60).toString().padStart(2, "0");
+                const s = (secs % 60).toString().padStart(2, "0");
+                return `${m}:${s}`;
+            };
+
+            const tabs = [
+                { id: "dashboard", label: "Dashboard & Companions", icon: "🏡" },
+                { id: "quests", label: "Study Quest Board", icon: "⚔️" },
+                { id: "shrink", label: "Task Shrinker", icon: "💡" },
+                { id: "habits", label: "Dopamine Habit Board", icon: "🔋" },
+                { id: "timeblock", label: "Cozy Timeblocking", icon: "⏰" }
+            ];
+
+            return (
+                <div class="flex h-screen overflow-hidden flex-col md:flex-row relative">
+                    
+                    {/* --- MOBILE TOP HEADER --- */}
+                    <header class="md:hidden bg-white border-b-2 border-[#E6DFD5] p-4 flex items-center justify-between z-40">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🌱</span>
+                            <span class="font-extrabold text-[#2D3A2E] tracking-tight text-base">CozySpace ADHD</span>
+                        </div>
+                        <button 
+                            onClick={() => { playDopamineDing(); setMobileMenuOpen(!mobileMenuOpen); }}
+                            class="py-2 px-3.5 bg-[#EBF2EE] border border-[#C5D9CE] text-[#4B6F44] rounded-2xl font-bold text-xs"
+                        >
+                            Menu 🍔
+                        </button>
+                    </header>
+
+                    {/* --- MOBILE OVERLAY DRAWER NAVIGATION --- */}
+                    {mobileMenuOpen && (
+                        <div class="fixed inset-0 bg-[#FAF6F0] z-50 p-6 flex flex-col justify-between overflow-y-auto">
+                            <div class="space-y-6">
+                                <div class="flex justify-between items-center border-b border-[#E6DFD5] pb-4">
+                                    <h2 class="font-black text-2xl text-[#2D3A2E] cozy-serif">Navigation</h2>
+                                    <button 
+                                        onClick={() => { playDopamineDing(); setMobileMenuOpen(false); }}
+                                        class="py-2 px-3 border border-[#E6DFD5] bg-white rounded-xl font-bold text-xs"
+                                    >
+                                        Close ✕
+                                    </button>
+                                </div>
+                                <div class="grid grid-cols-1 gap-3">
+                                    {tabs.map(tab => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => { 
+                                                playDopamineDing(); 
+                                                setActiveTab(tab.id); 
+                                                setMobileMenuOpen(false); 
+                                            }}
+                                            class={`flex items-center gap-4 p-4 rounded-2xl border font-bold text-left transition-all ${
+                                                activeTab === tab.id ? 'bg-[#EBF2EE] border-[#4B6F44] text-[#4B6F44]' : 'bg-white border-[#E6DFD5] text-[#8C8375]'
+                                            }`}
+                                        >
+                                            <span class="text-2xl">{tab.icon}</span>
+                                            <span>{tab.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div class="border-t border-[#E6DFD5] pt-6 space-y-4">
+                                <h4 class="text-xs font-bold text-[#8C8375] tracking-widest uppercase">Quick Settings</h4>
+                                <button 
+                                    onClick={() => {
+                                        const nextMute = !state.isMuteClick;
+                                        clickMuted = nextMute;
+                                        setState(prev => ({ ...prev, isMuteClick: nextMute }));
+                                        if (!nextMute) playDopamineClick();
+                                    }}
+                                    class={`w-full py-2 rounded-lg border font-bold text-xs transition-colors ${state.isMuteClick ? 'bg-rose-50 border-rose-200 text-rose-500' : 'bg-white border-[#E6DFD5] text-[#8C8375]'}`}
+                                >
+                                    {state.isMuteClick ? "🔇 Sounds Muted" : "🔊 Sounds Active"}
+                                </button>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button 
+                                        onClick={() => { setDrawerOpen(true); setMobileMenuOpen(false); }}
+                                        class="py-2 bg-white rounded-lg border border-[#E6DFD5] font-bold text-xs text-[#8C8375]"
+                                    >
+                                        💭 Brain Dump
+                                    </button>
+                                    <button 
+                                        onClick={handleFullWipe}
+                                        class="py-2 bg-white rounded-lg border border-rose-200 font-bold text-xs text-rose-500"
+                                    >
+                                        Hard Reset
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- DESKTOP SIDEBAR NAVIGATION --- */}
+                    <aside class="hidden md:flex w-80 bg-white border-r-2 border-[#E6DFD5] flex-col justify-between z-20">
+                        <div>
+                            <div class="p-6 border-b border-[#F0EBE1] flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-[#EBF2EE] flex items-center justify-center text-xl shadow-inner">
+                                    <svg class="w-9 h-9" viewBox="0 0 112 112" role="img" aria-label="Level 8 mature LEGO apple tree logo">
+                                        <rect x="50" y="56" width="12" height="33" rx="2" fill="#8A5B3E" stroke="#3F2B20" strokeWidth="3" />
+                                        <rect x="28" y="86" width="56" height="14" rx="3" fill="#C98254" stroke="#7A4B32" strokeWidth="3" />
+                                        <circle cx="42" cy="86" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                        <circle cx="70" cy="86" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                        <rect x="28" y="36" width="24" height="16" rx="4" fill="#5FAE55" stroke="#2D3A2E" strokeWidth="3" />
+                                        <rect x="44" y="25" width="24" height="16" rx="4" fill="#76BF63" stroke="#2D3A2E" strokeWidth="3" />
+                                        <rect x="60" y="36" width="24" height="16" rx="4" fill="#5FAE55" stroke="#2D3A2E" strokeWidth="3" />
+                                        <rect x="35" y="50" width="42" height="20" rx="4" fill="#4F9B47" stroke="#2D3A2E" strokeWidth="3" />
+                                        <rect x="24" y="54" width="24" height="16" rx="4" fill="#69B85D" stroke="#2D3A2E" strokeWidth="3" />
+                                        <rect x="64" y="54" width="24" height="16" rx="4" fill="#69B85D" stroke="#2D3A2E" strokeWidth="3" />
+                                        <circle cx="40" cy="59" r="4.5" fill="#E33B35" stroke="#8A1E1A" strokeWidth="2" />
+                                        <circle cx="58" cy="47" r="4.5" fill="#F04438" stroke="#8A1E1A" strokeWidth="2" />
+                                        <circle cx="72" cy="61" r="4.5" fill="#D92D20" stroke="#8A1E1A" strokeWidth="2" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h1 class="font-extrabold text-lg text-[#2D3A2E] tracking-tight">CozySpace ADHD</h1>
+                                    <p class="text-xs font-semibold text-[#8C8375] italic">Mindful & Stress-Free Studying</p>
+                                </div>
+                            </div>
+
+                            <nav class="p-4 space-y-2">
+                                {tabs.map(tab => (
+                                    <button 
+                                        key={tab.id}
+                                        onClick={() => { playDopamineDing(); setActiveTab(tab.id); }}
+                                        class={`w-full flex items-center gap-4 p-3.5 rounded-2xl font-bold transition-all ${activeTab === tab.id ? 'bg-[#EBF2EE] text-[#4B6F44]' : 'text-[#8C8375] hover:bg-[#FAF9F6]'}`}
+                                    >
+                                        <span class="text-xl">{tab.icon}</span> {tab.label}
+                                    </button>
+                                ))}
+                            </nav>
+                        </div>
+
+                        {/* Audio Noise Console widget */}
+                        <div class="p-6 bg-[#FAF9F6] border-t border-[#F0EBE1] space-y-4">
+                            <h4 class="text-xs font-bold text-[#8C8375] tracking-widest uppercase">Soundscape Generator</h4>
+                            
+                            <div class="space-y-2">
+                                <button 
+                                    onClick={() => setIsBirdsongActive(!isBirdsongActive)}
+                                    class={`w-full flex items-center justify-between p-3 rounded-xl border font-bold text-sm transition-all ${isBirdsongActive ? 'bg-[#EBF2EE] border-[#A8CFB3] text-[#37623B]' : 'bg-white border-[#E6DFD5]'}`}
+                                >
+                                    <span class="flex items-center gap-2">🐦 Birdsong</span>
+                                    <span class="text-xs">{isBirdsongActive ? "PLAYING" : "MUTED"}</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setIsWaterDropActive(!isWaterDropActive)}
+                                    class={`w-full flex items-center justify-between p-3 rounded-xl border font-bold text-sm transition-all ${isWaterDropActive ? 'bg-[#E8F4F2] border-[#9DD6D0] text-[#286B66]' : 'bg-white border-[#E6DFD5]'}`}
+                                >
+                                    <span class="flex items-center gap-2">💧 Water Drops</span>
+                                    <span class="text-xs">{isWaterDropActive ? "PLAYING" : "MUTED"}</span>
+                                </button>
+                            </div>
+
+                            <button 
+                                onClick={() => {
+                                    const nextMute = !state.isMuteClick;
+                                    clickMuted = nextMute;
+                                    setState(prev => ({ ...prev, isMuteClick: nextMute }));
+                                    if (!nextMute) playDopamineClick();
+                                }}
+                                class={`w-full py-2 rounded-lg border font-bold text-xs transition-colors mb-2 ${state.isMuteClick ? 'bg-rose-50 border-rose-200 text-rose-500' : 'bg-[#FAF6F0] border-[#E6DFD5] text-[#8C8375] hover:bg-white'}`}
+                            >
+                                {state.isMuteClick ? "🔇 Sounds Muted" : "🔊 Sounds Active"}
+                            </button>
+                            <div class="flex gap-2">
+                                <button 
+                                    onClick={() => setDrawerOpen(true)}
+                                    class="flex-1 py-2 text-xs font-extrabold bg-[#FAF6F0] rounded-lg border border-[#E6DFD5] text-[#8C8375]"
+                                >
+                                    💭 Brain Dump
+                                </button>
+                                <button 
+                                    onClick={handleFullWipe}
+                                    class="py-2 px-3 text-xs font-semibold text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"
+                                    title="Hard Reset App"
+                                >
+                                    Reset App
+                                </button>
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* --- MAIN WORKSPACE AREA --- */}
+                    <main class="flex-grow h-full overflow-y-auto p-6 md:p-10 space-y-8 bg-[#FAF6F0]" id="cozy-workspace-container">
+                        
+                        {/* TAB 1: DASHBOARD */}
+                        {activeTab === "dashboard" && (
+                            <div class="space-y-6">
+                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div>
+                                        <h2 class="text-3xl font-black text-[#2D3A2E] cozy-serif">Hello, Star-child ✨</h2>
+                                        <p class="text-sm font-semibold text-[#8C8375]">Take a breath. Choose a cozy soundscape, feed Sprout, and crush tasks with zero pressure.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => exportAestheticCard("cozy-workspace-container", "my_cozyspace_dashboard")}
+                                        class="px-4 py-2 text-xs font-bold rounded-full bg-[#EBF2EE] border border-[#C5D9CE] text-[#4B6F44]"
+                                    >
+                                        📸 Share Aesthetic Progress
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    
+                                    {/* Virtual Pet Companion Stage View */}
+                                    <div class="cozy-card p-6 bg-[#EBF2EE] border-[#C5D9CE] col-span-1 flex flex-col justify-between space-y-6">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h3 class="font-extrabold text-[#2D3A2E] text-lg">My Study Partner</h3>
+                                                <span class="text-xs font-bold text-[#4B6F44]">Level {state.studyTree.level} Companion</span>
+                                            </div>
+                                            <span class="text-xs font-bold uppercase tracking-widest px-2.5 py-1 bg-white border border-[#C5D9CE] rounded-full text-[#4B6F44]">
+                                                {state.studyTree.growthStage}
+                                            </span>
+                                        </div>
+
+                                        {/* Plant Graphics SVGs */}
+                                        <div class="flex justify-center py-6">
+                                            <div class="relative flex flex-col items-center focus-pulse">
+                                                {state.studyTree.growthStage === "seedling" && (
+                                                    <svg class="w-28 h-28" viewBox="0 0 96 96" role="img" aria-label="Level 1 to 2 LEGO seedling in terracotta brick pot">
+                                                        <rect x="26" y="62" width="44" height="18" rx="3" fill="#C98254" stroke="#7A4B32" strokeWidth="3" />
+                                                        <rect x="31" y="55" width="34" height="9" rx="2" fill="#D99663" stroke="#7A4B32" strokeWidth="3" />
+                                                        <circle cx="38" cy="60" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                                        <circle cx="58" cy="60" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                                        <rect x="44" y="41" width="8" height="17" rx="2" fill="#4B6F44" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="36" y="34" width="16" height="10" rx="3" fill="#8DCB72" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <circle cx="42" cy="37" r="2.6" fill="#BFE6A4" />
+                                                        <rect x="47" y="34" width="16" height="10" rx="3" fill="#77B85F" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <circle cx="57" cy="37" r="2.6" fill="#BFE6A4" />
+                                                    </svg>
+                                                )}
+                                                {state.studyTree.growthStage === "sprout" && (
+                                                    <svg class="w-28 h-28" viewBox="0 0 96 96" role="img" aria-label="Level 3 to 4 balanced LEGO sprout">
+                                                        <rect x="25" y="66" width="46" height="16" rx="3" fill="#C98254" stroke="#7A4B32" strokeWidth="3" />
+                                                        <circle cx="38" cy="66" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                                        <circle cx="58" cy="66" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                                        <rect x="44" y="35" width="8" height="33" rx="2" fill="#4B6F44" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="28" y="43" width="20" height="10" rx="3" fill="#86C76B" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <circle cx="35" cy="46" r="2.7" fill="#BFE6A4" />
+                                                        <rect x="48" y="43" width="20" height="10" rx="3" fill="#86C76B" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <circle cx="61" cy="46" r="2.7" fill="#BFE6A4" />
+                                                        <rect x="36" y="27" width="24" height="10" rx="3" fill="#77B85F" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <circle cx="48" cy="30" r="2.7" fill="#BFE6A4" />
+                                                    </svg>
+                                                )}
+                                                {state.studyTree.growthStage === "blossom" && (
+                                                    <svg class="w-32 h-32" viewBox="0 0 96 96" role="img" aria-label="Level 5 to 7 LEGO blossom with pink flower">
+                                                        <rect x="25" y="68" width="46" height="15" rx="3" fill="#C98254" stroke="#7A4B32" strokeWidth="3" />
+                                                        <circle cx="37" cy="68" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                                        <circle cx="59" cy="68" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                                        <rect x="44" y="33" width="8" height="36" rx="2" fill="#4B6F44" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="27" y="47" width="21" height="10" rx="3" fill="#82C969" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="48" y="47" width="21" height="10" rx="3" fill="#82C969" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="36" y="35" width="24" height="10" rx="3" fill="#76B95E" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="42" y="16" width="12" height="12" rx="3" fill="#F9A8D4" stroke="#7A3157" strokeWidth="3" />
+                                                        <rect x="30" y="25" width="14" height="12" rx="3" fill="#FBCFE8" stroke="#7A3157" strokeWidth="3" />
+                                                        <rect x="52" y="25" width="14" height="12" rx="3" fill="#F472B6" stroke="#7A3157" strokeWidth="3" />
+                                                        <circle cx="48" cy="31" r="5" fill="#FFE08A" stroke="#7A5A1A" strokeWidth="3" />
+                                                    </svg>
+                                                )}
+                                                {state.studyTree.growthStage === "mature" && (
+                                                    <svg class="w-36 h-36" viewBox="0 0 112 112" role="img" aria-label="Level 8 and up mature LEGO apple tree">
+                                                        <rect x="50" y="56" width="12" height="33" rx="2" fill="#8A5B3E" stroke="#3F2B20" strokeWidth="3" />
+                                                        <rect x="28" y="86" width="56" height="14" rx="3" fill="#C98254" stroke="#7A4B32" strokeWidth="3" />
+                                                        <circle cx="42" cy="86" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                                        <circle cx="70" cy="86" r="3.5" fill="#F0B27A" stroke="#7A4B32" strokeWidth="2" />
+                                                        <rect x="28" y="36" width="24" height="16" rx="4" fill="#5FAE55" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="44" y="25" width="24" height="16" rx="4" fill="#76BF63" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="60" y="36" width="24" height="16" rx="4" fill="#5FAE55" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="35" y="50" width="42" height="20" rx="4" fill="#4F9B47" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="24" y="54" width="24" height="16" rx="4" fill="#69B85D" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <rect x="64" y="54" width="24" height="16" rx="4" fill="#69B85D" stroke="#2D3A2E" strokeWidth="3" />
+                                                        <circle cx="42" cy="40" r="3" fill="#BFE6A4" />
+                                                        <circle cx="56" cy="29" r="3" fill="#BFE6A4" />
+                                                        <circle cx="72" cy="40" r="3" fill="#BFE6A4" />
+                                                        <circle cx="40" cy="59" r="4.5" fill="#E33B35" stroke="#8A1E1A" strokeWidth="2" />
+                                                        <circle cx="58" cy="47" r="4.5" fill="#F04438" stroke="#8A1E1A" strokeWidth="2" />
+                                                        <circle cx="72" cy="61" r="4.5" fill="#D92D20" stroke="#8A1E1A" strokeWidth="2" />
+                                                    </svg>
+                                                )}
+                                                <span class="mt-4 font-black text-sm text-[#2D3A2E]">{state.studyTree.name}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Progress Bar level */}
+                                        <div class="space-y-1">
+                                            <div class="flex justify-between text-xs font-bold text-[#8C8375]">
+                                                <span>{state.studyTree.xp} / {state.studyTree.xpNeeded} XP</span>
+                                                <span>Level Progress</span>
+                                            </div>
+                                            <div class="w-full bg-white h-3.5 border border-[#C5D9CE] rounded-full overflow-hidden">
+                                                <div 
+                                                    class="bg-[#4B6F44] h-full transition-all duration-300"
+                                                    style={{ width: `${(state.studyTree.xp / state.studyTree.xpNeeded) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-4 gap-2">
+                                            <div class="bg-white border border-[#C5D9CE] rounded-xl p-2 flex flex-col items-center gap-1">
+                                                <svg class="w-10 h-10" viewBox="0 0 96 96" role="img" aria-label="Seedling LEGO preview">
+                                                    <rect x="26" y="62" width="44" height="18" rx="3" fill="#C98254" stroke="#7A4B32" strokeWidth="3" />
+                                                    <rect x="44" y="41" width="8" height="17" rx="2" fill="#4B6F44" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="36" y="34" width="16" height="10" rx="3" fill="#8DCB72" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="47" y="34" width="16" height="10" rx="3" fill="#77B85F" stroke="#2D3A2E" strokeWidth="3" />
+                                                </svg>
+                                                <span class="text-[10px] font-black text-[#4B6F44]">Lv 1-2</span>
+                                            </div>
+                                            <div class="bg-white border border-[#C5D9CE] rounded-xl p-2 flex flex-col items-center gap-1">
+                                                <svg class="w-10 h-10" viewBox="0 0 96 96" role="img" aria-label="Sprout LEGO preview">
+                                                    <rect x="25" y="66" width="46" height="16" rx="3" fill="#C98254" stroke="#7A4B32" strokeWidth="3" />
+                                                    <rect x="44" y="35" width="8" height="33" rx="2" fill="#4B6F44" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="28" y="43" width="20" height="10" rx="3" fill="#86C76B" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="48" y="43" width="20" height="10" rx="3" fill="#86C76B" stroke="#2D3A2E" strokeWidth="3" />
+                                                </svg>
+                                                <span class="text-[10px] font-black text-[#4B6F44]">Lv 3-4</span>
+                                            </div>
+                                            <div class="bg-white border border-[#C5D9CE] rounded-xl p-2 flex flex-col items-center gap-1">
+                                                <svg class="w-10 h-10" viewBox="0 0 96 96" role="img" aria-label="Blossom LEGO preview">
+                                                    <rect x="25" y="68" width="46" height="15" rx="3" fill="#C98254" stroke="#7A4B32" strokeWidth="3" />
+                                                    <rect x="44" y="33" width="8" height="36" rx="2" fill="#4B6F44" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="27" y="47" width="21" height="10" rx="3" fill="#82C969" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="48" y="47" width="21" height="10" rx="3" fill="#82C969" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="42" y="16" width="12" height="12" rx="3" fill="#F9A8D4" stroke="#7A3157" strokeWidth="3" />
+                                                    <circle cx="48" cy="31" r="5" fill="#FFE08A" stroke="#7A5A1A" strokeWidth="3" />
+                                                </svg>
+                                                <span class="text-[10px] font-black text-[#4B6F44]">Lv 5-7</span>
+                                            </div>
+                                            <div class="bg-white border border-[#C5D9CE] rounded-xl p-2 flex flex-col items-center gap-1">
+                                                <svg class="w-10 h-10" viewBox="0 0 112 112" role="img" aria-label="Mature LEGO apple tree preview">
+                                                    <rect x="50" y="56" width="12" height="33" rx="2" fill="#8A5B3E" stroke="#3F2B20" strokeWidth="3" />
+                                                    <rect x="28" y="86" width="56" height="14" rx="3" fill="#C98254" stroke="#7A4B32" strokeWidth="3" />
+                                                    <rect x="28" y="36" width="24" height="16" rx="4" fill="#5FAE55" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="44" y="25" width="24" height="16" rx="4" fill="#76BF63" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="60" y="36" width="24" height="16" rx="4" fill="#5FAE55" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <rect x="35" y="50" width="42" height="20" rx="4" fill="#4F9B47" stroke="#2D3A2E" strokeWidth="3" />
+                                                    <circle cx="40" cy="59" r="4.5" fill="#E33B35" stroke="#8A1E1A" strokeWidth="2" />
+                                                    <circle cx="72" cy="61" r="4.5" fill="#D92D20" stroke="#8A1E1A" strokeWidth="2" />
+                                                </svg>
+                                                <span class="text-[10px] font-black text-[#4B6F44]">Lv 8+</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Cozy Pomodoro & Ambient Control Center */}
+                                    <div class="cozy-card p-6 bg-white col-span-1 lg:col-span-2 flex flex-col justify-between space-y-6">
+                                        <div class="flex justify-between items-center">
+                                            <h3 class="font-extrabold text-[#2D3A2E] text-lg">Cozy Focus Clock</h3>
+                                            <div class="flex gap-1.5">
+                                                <button 
+                                                    onClick={() => switchTimerMode("focus")} 
+                                                    class={`px-3 py-1.5 rounded-full text-xs font-bold ${timerMode === 'focus' ? 'bg-[#4B6F44] text-white' : 'bg-[#FAF9F6] text-[#8C8375]'}`}
+                                                >
+                                                    🎯 Focus
+                                                </button>
+                                                <button 
+                                                    onClick={() => switchTimerMode("shortBreak")} 
+                                                    class={`px-3 py-1.5 rounded-full text-xs font-bold ${timerMode === 'shortBreak' ? 'bg-[#4B6F44] text-white' : 'bg-[#FAF9F6] text-[#8C8375]'}`}
+                                                >
+                                                    🧁 Chill Break
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-center py-6">
+                                            <span class="text-7xl font-black text-[#2D3A2E] tracking-tight tabular-nums block select-none">
+                                                {formatTime(timeLeft)}
+                                            </span>
+                                            <span class="text-xs font-extrabold text-[#8C8375] uppercase tracking-wider block mt-1.5">
+                                                {timerMode === 'focus' ? "Locked In focus session" : "Breathable chill break"}
+                                            </span>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <button 
+                                                onClick={toggleTimer}
+                                                class={`py-3.5 rounded-2xl font-bold border transition-all text-sm ${isTimerRunning ? 'bg-[#FAF6F0] border-amber-300 text-amber-800' : 'bg-[#4B6F44] border-transparent text-white'}`}
+                                            >
+                                                {isTimerRunning ? "⏸️ Pause Vibe" : "▶️ Start Flow"}
+                                            </button>
+                                            <button 
+                                                onClick={resetTimer}
+                                                class="py-3.5 bg-[#FAF9F6] border border-[#E6DFD5] text-[#8C8375] rounded-2xl font-bold text-sm"
+                                            >
+                                                🔄 Restart
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Active Quests snapshot */}
+                                <div class="cozy-card p-6 bg-white space-y-4">
+                                    <div class="flex justify-between items-center">
+                                        <h3 class="font-extrabold text-[#2D3A2E] text-lg">Top High-XP Quests Today</h3>
+                                        <span class="text-xs font-bold text-[#8C8375]">Finish to level up Sprout!</span>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        {state.tasks.filter(t => !t.completed).slice(0, 3).map(task => (
+                                            <div key={task.id} class="flex justify-between items-center p-4 border border-[#F0EBE1] rounded-2xl hover:bg-[#FAF9F6] transition-colors">
+                                                <div class="flex items-center gap-3">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        onChange={() => toggleTaskCompleted(task.id, task.completed, task.xpReward)}
+                                                        checked={task.completed}
+                                                        class="w-5 h-5 rounded border-[#D9D2C5] accent-[#4B6F44] cursor-pointer"
+                                                    />
+                                                    <span class="font-bold text-sm text-[#2D3A2E]">{task.title}</span>
+                                                </div>
+                                                <span class="text-xs font-extrabold px-3 py-1 bg-[#EBF2EE] text-[#4B6F44] rounded-full">
+                                                    +{task.xpReward} XP
+                                                </span>
+                                            </div>
+                                        ))}
+
+                                        {state.tasks.filter(t => !t.completed).length === 0 && (
+                                            <div class="p-6 text-center text-[#8C8375] font-bold text-sm italic">
+                                                🎉 All study quests complete! Sprout is super proud of you. Take a break!
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 2: QUEST BOARD */}
+                        {activeTab === "quests" && (
+                            <div class="space-y-6">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h2 class="text-3xl font-black text-[#2D3A2E] cozy-serif">⚔️ Quest Board</h2>
+                                        <p class="text-sm font-semibold text-[#8C8375]">Earn satisfying dopamine-burst chime effects and XP for every check-box clicked.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleResetSection("tasks")}
+                                        class="px-4 py-2 text-xs font-bold text-rose-500 rounded-full border border-rose-200 hover:bg-rose-50"
+                                    >
+                                        Clear Quest List
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Create quest card */}
+                                    <div class="cozy-card p-6 bg-white space-y-4">
+                                        <h3 class="font-extrabold text-[#2D3A2E]">➕ Log New Study Quest</h3>
+                                        
+                                        <form onSubmit={(e) => {
+                                            e.preventDefault();
+                                            const form = e.target;
+                                            const title = form.questTitle.value.trim();
+                                            const difficulty = form.questDiff.value;
+                                            if (!title) return;
+                                            handleAddTask(title, difficulty);
+                                            form.reset();
+                                        }} class="space-y-4">
+                                            <div>
+                                                <label class="text-xs font-bold block mb-1.5 text-[#8C8375]">Quest Title</label>
+                                                <input 
+                                                    name="questTitle"
+                                                    type="text" 
+                                                    placeholder="Read syllabus, solve 3 math questions..."
+                                                    class="w-full p-3 border border-[#E6DFD5] rounded-xl text-sm"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label class="text-xs font-bold block mb-1.5 text-[#8C8375]">Challenge Level (XP Multiplier)</label>
+                                                <select name="questDiff" class="w-full p-3 border border-[#E6DFD5] bg-[#FAF9F6] rounded-xl text-sm font-bold">
+                                                    <option value="easy">🌱 Easy Vibe (+10 XP)</option>
+                                                    <option value="normal">⚡ Normal Quest (+15 XP)</option>
+                                                    <option value="hard">🔥 Boss Mode (+25 XP)</option>
+                                                </select>
+                                            </div>
+
+                                            <button type="submit" class="w-full p-3.5 bg-[#4B6F44] border-transparent text-white rounded-2xl font-bold text-sm">
+                                                Add Quest to Board 📝
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    {/* Quest listings panel */}
+                                    <div class="lg:col-span-2 space-y-4">
+                                        <div class="cozy-card p-6 bg-white space-y-4">
+                                            <h3 class="font-extrabold text-[#2D3A2E] text-lg">Active Study Quests</h3>
+
+                                            <div class="space-y-3">
+                                                {state.tasks.map(task => (
+                                                    <div 
+                                                        key={task.id} 
+                                                        class={`flex justify-between items-center p-4 border border-[#F0EBE1] rounded-2xl transition-all ${task.completed ? 'bg-slate-50 opacity-60 border-slate-200' : 'bg-white'}`}
+                                                    >
+                                                        <div class="flex items-center gap-3">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                onChange={() => toggleTaskCompleted(task.id, task.completed, task.xpReward)}
+                                                                checked={task.completed}
+                                                                class="w-5 h-5 rounded border-[#D9D2C5] accent-[#4B6F44] cursor-pointer"
+                                                            />
+                                                            <span class={`font-bold text-sm ${task.completed ? 'line-through text-slate-400' : 'text-[#2D3A2E]'}`}>{task.title}</span>
+                                                        </div>
+                                                        <div class="flex items-center gap-3">
+                                                            <span class={`text-[10px] font-black px-3 py-1 rounded-full uppercase ${
+                                                                task.difficulty === 'hard' ? 'bg-rose-100 text-rose-700' :
+                                                                task.difficulty === 'normal' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                                                            }`}>
+                                                                +{task.xpReward} XP
+                                                            </span>
+                                                            <button onClick={() => handleDeleteTask(task.id)} class="text-slate-400 hover:text-rose-500">
+                                                                
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                                {state.tasks.length === 0 && (
+                                                    <p class="text-center p-8 text-[#8C8375] font-bold text-sm italic">
+                                                        No study quests recorded! Start tracking to earn level-ups.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 3: TASK SHRINKER */}
+                        {activeTab === "shrink" && (
+                            <div class="space-y-6">
+                                <div>
+                                    <h2 class="text-3xl font-black text-[#2D3A2E] cozy-serif"> Executive Dysfunction Task Shrinker</h2>
+                                    <p class="text-sm font-semibold text-[#8C8375]">Overwhelmed? Don't stress. Put down your giant, scary task, and let's slice it down to size.</p>
+                                </div>
+
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div class="cozy-card p-6 bg-white space-y-4">
+                                        <h3 class="font-extrabold text-[#2D3A2E] text-lg">Input Your Giant Scary Task</h3>
+                                        
+                                        <form onSubmit={handleTaskShrink} class="space-y-4">
+                                            <input 
+                                                type="text" 
+                                                value={scaryTask}
+                                                onChange={e => setScaryTask(e.target.value)}
+                                                placeholder="e.g. Write entire History Term paper (scary!)"
+                                                class="w-full p-4 border-2 border-[#E6DFD5] rounded-2xl text-sm font-semibold"
+                                            />
+                                            <button 
+                                                type="submit"
+                                                class="w-full py-4 bg-[#EBF2EE] border border-[#C5D9CE] text-[#4B6F44] rounded-2xl font-bold text-sm"
+                                            >
+                                                 Shrink It Down!
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    {/* Action step breakdown display */}
+                                    <div class="cozy-card p-6 bg-white space-y-4 flex flex-col justify-between">
+                                        <div>
+                                            <h3 class="font-extrabold text-[#2D3A2E] text-lg">Your Easy-Vibe Action Steps</h3>
+                                            <p class="text-xs text-[#8C8375] mt-1">Can you commit to just doing Step 1? That's all that counts!</p>
+                                        </div>
+
+                                        {shrunkSteps.length > 0 ? (
+                                            <div class="space-y-3 flex-1 py-4 justify-center flex flex-col">
+                                                {shrunkSteps.map((step, idx) => (
+                                                    <div key={idx} class="p-3 bg-[#FAF9F6] border border-[#F0EBE1] rounded-xl flex gap-3 items-center">
+                                                        <span class="w-6 h-6 rounded-full bg-[#4B6F44] text-white flex items-center justify-center font-bold text-xs">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <span class="text-sm font-semibold text-[#2D3A2E]">{step}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div class="flex-1 flex items-center justify-center p-8 text-center text-[#8C8375] font-bold text-sm italic">
+                                                Nothing to shrink yet! Put a scary task on the left to activate hyperfocus.
+                                            </div>
+                                        )}
+
+                                        {shrunkSteps.length > 0 && (
+                                            <button 
+                                                onClick={adoptShrunkTask}
+                                                class="w-full py-3.5 bg-[#4B6F44] text-white rounded-2xl font-bold text-sm mt-4"
+                                            >
+                                                Adopt Action Steps on Quest Board 
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 4: HABIT BOARD */}
+                        {activeTab === "habits" && (
+                            <div class="space-y-6">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h2 class="text-3xl font-black text-[#2D3A2E] cozy-serif"> Habit Board</h2>
+                                        <p class="text-sm font-semibold text-[#8C8375]">Ditch stressful multi-day streaks! Accumulate hydration or mini breaks on a guilt-free board.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleResetSection("habits")}
+                                        class="px-4 py-2 text-xs font-bold text-rose-500 rounded-full border border-rose-200 hover:bg-rose-50"
+                                    >
+                                        Clear Habit Grid
+                                    </button>
+                                </div>
+
+                                <div class="cozy-card p-6 bg-white overflow-x-auto">
+                                    <div class="min-w-[700px] space-y-4">
+                                        <div class="grid grid-cols-8 gap-4 text-center">
+                                            <div class="text-left font-bold text-sm text-[#8C8375]">Target Habit Vibe</div>
+                                            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(day => (
+                                                <div key={day} class="font-bold text-xs text-[#8C8375] tracking-wider uppercase">{day}</div>
+                                            ))}
+                                        </div>
+
+                                        {state.habits.map((habit, habitIdx) => (
+                                            <div key={habit.id} class="grid grid-cols-8 gap-4 items-center border-t border-[#F0EBE1] pt-4">
+                                                <div class="flex justify-between items-center text-left">
+                                                    <span class="font-bold text-sm text-[#2D3A2E]">{habit.label}</span>
+                                                    <button 
+                                                        onClick={() => {
+                                                            playDopamineDing();
+                                                            setState(prev => ({
+                                                                ...prev,
+                                                                habits: prev.habits.filter(h => h.id !== habit.id)
+                                                            }));
+                                                        }}
+                                                        class="text-xs text-rose-500 hover:opacity-85 font-semibold"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                                {habit.progress.map((checked, dayIdx) => (
+                                                    <div key={dayIdx} class="flex justify-center">
+                                                        <button 
+                                                            onClick={() => {
+                                                                if (!checked) gainXP(10); 
+                                                                setState(prev => {
+                                                                    const updated = [...prev.habits];
+                                                                    updated[habitIdx].progress[dayIdx] = !updated[habitIdx].progress[dayIdx];
+                                                                    return { ...prev, habits: updated };
+                                                                });
+                                                            }}
+                                                            class={`w-10 h-10 rounded-2xl border-2 flex items-center justify-center font-bold text-base transition-all ${checked ? 'bg-[#EBF2EE] border-[#4B6F44] text-[#4B6F44]' : 'bg-[#FAF9F6] border-[#E6DFD5]'}`}
+                                                        >
+                                                            {checked ? "✓" : ""}
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+
+                                        {/* Quick Add Habit form row */}
+                                        <div class="pt-6 border-t border-[#F0EBE1]">
+                                            <button 
+                                                onClick={() => {
+                                                    const name = prompt("Enter a small healthy habit (e.g. Meditate, Water, Read 1 Page):");
+                                                    if (!name) return;
+                                                    setState(prev => ({
+                                                        ...prev,
+                                                        habits: [...prev.habits, { id: Date.now().toString(), label: name, progress: Array(7).fill(false) }]
+                                                    }));
+                                                }}
+                                                class="px-5 py-2.5 bg-[#EBF2EE] border border-[#C5D9CE] text-[#4B6F44] rounded-full font-bold text-xs"
+                                            >
+                                                 Add Custom Habit Row
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* TAB 5: TIMEBLOCKING */}
+                        {activeTab === "timeblock" && (
+                            <div class="space-y-6">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h2 class="text-3xl font-black text-[#2D3A2E] cozy-serif"> Cozy Timeblocking</h2>
+                                        <p class="text-sm font-semibold text-[#8C8375]">Ditch minute-by-minute constraints. Map broad slots for calm study goals.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleResetSection("timeblocks")}
+                                        class="px-4 py-2 text-xs font-bold text-rose-500 rounded-full border border-rose-200 hover:bg-rose-50"
+                                    >
+                                        Reset Slots
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div class="lg:col-span-2 space-y-3">
+                                        {Object.keys(defaultState.timeblocks).map(slot => (
+                                            <div key={slot} class="cozy-card p-4 bg-white grid grid-cols-4 gap-4 items-center">
+                                                <div class="col-span-1 text-xs font-black text-[#8C8375] uppercase tracking-wider">{slot}</div>
+                                                <input 
+                                                    type="text" 
+                                                    value={state.timeblocks[slot] || ""}
+                                                    onChange={e => {
+                                                        const text = e.target.value;
+                                                        setState(prev => ({
+                                                            ...prev,
+                                                            timeblocks: { ...prev.timeblocks, [slot]: text }
+                                                        }));
+                                                    }}
+                                                    placeholder="Keep empty or schedule broad goal..."
+                                                    class="col-span-3 p-2.5 border border-[#E6DFD5] rounded-xl text-sm font-bold"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div class="cozy-card p-6 bg-[#EBF2EE] border-[#C5D9CE] space-y-4">
+                                        <h3 class="font-extrabold text-[#2D3A2E] text-lg"> Why Time-Blocking?</h3>
+                                        <p class="text-sm text-[#4B6F44] leading-relaxed">
+                                            Rigid schedules often trigger "ADHD freeze" when a single task runs over schedule.
+                                        </p>
+                                        <p class="text-sm text-[#4B6F44] leading-relaxed font-bold">
+                                            By blocking generous 2-hour segments, you give your hyperfocus room to breathe without guilt.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* --- EXPANDABLE OVERTHINKER BRAIN DUMP DRAWER --- */}
+                    {drawerOpen && (
+                        <div class="fixed inset-0 bg-black bg-opacity-35 flex justify-end z-50">
+                            <div class="w-full max-w-md h-full bg-[#FAF6F0] p-6 shadow-2xl flex flex-col justify-between">
+                                <div class="space-y-4 flex-1 flex flex-col">
+                                    <div class="flex justify-between items-center border-b border-[#E6DFD5] pb-4">
+                                        <div>
+                                            <h3 class="font-black text-[#2D3A2E] text-xl cozy-serif"> Overthinker Drawer</h3>
+                                            <p class="text-xs font-semibold text-[#8C8375]">Write down unrelated thoughts to park them outside your focus field.</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => { playDopamineDing(); setDrawerOpen(false); }}
+                                            class="p-2 border border-[#E6DFD5] bg-white rounded-xl font-bold hover:bg-slate-50 text-sm"
+                                        >
+                                            Close 
+                                        </button>
+                                    </div>
+
+                                    <textarea 
+                                        value={state.brainDump}
+                                        onChange={e => setState({ ...state, brainDump: e.target.value })}
+                                        placeholder="Type random ideas, distracting thoughts here..."
+                                        class="w-full flex-grow p-4 border border-[#E6DFD5] rounded-2xl resize-none font-bold text-sm bg-white"
+                                    ></textarea>
+                                </div>
+
+                                <div class="pt-4 border-t border-[#E6DFD5] text-xs text-center font-bold text-[#8C8375]">
+                                     Auto-saves instantly. Safe to clean out once studying concludes!
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        try {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<App />);
+        } catch (error) {
+            console.error("CozySpace app failed to render. Keeping the static fallback visible.", error);
+        }
+    </script>
+</body>
+</html>
+
+

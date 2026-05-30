@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lotus Reset - ADHD Self-Care & Sensory Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FDFBF7; /* Soft Pearl background */
+            color: #4C1D95; /* Deep Purple for contrast */
+        }
+        
+        .bubbly-font {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* Lotus Soft-Brutalism */
+        .lotus-card {
+            background-color: #FFFFFF;
+            border: 3px solid #831843; /* Deep Rose Border */
+            box-shadow: 4px 4px 0px 0px #FBCFE8; /* Soft Lotus Shadow */
+            border-radius: 28px;
+            transition: all 0.2s ease;
+        }
+        .lotus-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #FBCFE8;
+        }
+
+        .lotus-btn {
+            border: 2px solid #831843;
+            box-shadow: 2px 2px 0px 0px #831843;
+            transition: all 0.1s ease;
+        }
+        .lotus-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px #831843;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #FDFBF7; }
+        ::-webkit-scrollbar-thumb { background: #FBCFE8; border-radius: 4px; }
+        
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(131, 24, 67, 0.4); z-index: 40; display: none; }
+        .sidebar-overlay.active { display: block; }
+
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: #831843; color: #FFFFFF;
+            padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 14px; z-index: 9999;
+            animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
+            box-shadow: 4px 4px 0px 0px #FBCFE8;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+
+        /* Satisfying Pill Pop Animation */
+        @keyframes pop-out {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); background-color: #FDF2F8; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+        .pill-popped { animation: pop-out 0.3s forwards; }
+
+        /* Ensure input fields don't cause horizontal scrolling on mobile */
+        input, select { max-width: 100%; }
+    </style>
+</head>
+<body class="antialiased min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- SOUND ENGINE (Web Audio API) ---
+        let audioCtx = null;
+        let isMuted = false;
+
+        const initAudio = () => {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        };
+
+        const playSound = (type = 'click') => {
+            if (isMuted) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now); osc.stop(now + 0.05);
+                } else if (type === 'pop') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.08);
+                    
+                    const noise = audioCtx.createBufferSource();
+                    const bufferSize = audioCtx.sampleRate * 0.1; 
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    noise.buffer = buffer;
+                    
+                    const noiseFilter = audioCtx.createBiquadFilter();
+                    noiseFilter.type = 'highpass';
+                    noiseFilter.frequency.value = 5000;
+                    const noiseGain = audioCtx.createGain();
+                    noiseGain.gain.setValueAtTime(0.1, now);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+                    noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+                    noise.start(now);
+
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now); osc.stop(now + 0.08);
+                } else if (type === 'spoon') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(1200, now);
+                    osc.frequency.exponentialRampToValueAtTime(2400, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                } else if (type === 'success') {
+                    const freqs = [523.25, 659.25, 1046.50];
+                    freqs.forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.type = 'sine'; o.connect(g); g.connect(audioCtx.destination);
+                        o.frequency.setValueAtTime(f, now + i * 0.1);
+                        g.gain.setValueAtTime(0.1, now + i * 0.1);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.4);
+                        o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.4);
+                    });
+                }
+            } catch(e) {}
+        };
+
+        const showToast = (message) => {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        const exportScreenshot = async (elementId, filename) => {
+            try {
+                showToast("📸 Capturing space...");
+                playSound('click');
+                const element = document.getElementById(elementId);
+                const canvas = await html2canvas(element, { backgroundColor: '#FDFBF7', scale: 2 });
+                const link = document.createElement('a');
+                link.download = filename || 'lotus_reset.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch(e) {
+                showToast("❌ Export failed.");
+            }
+        };
+
+        const defaultState = {
+            spoons: 5, 
+            hygieneTasks: [
+                { id: "1", text: "Wash face", spoonsNeeded: 1, done: false },
+                { id: "2", text: "Brush teeth (Full 2 mins)", spoonsNeeded: 2, done: false },
+                { id: "3", text: "Mouthwash only (Low energy)", spoonsNeeded: 0, done: false },
+                { id: "4", text: "Take a full shower", spoonsNeeded: 4, done: false },
+                { id: "5", text: "Use wet wipes / Dry shampoo", spoonsNeeded: 1, done: false }
+            ],
+            medications: [
+                { id: "1", name: "ADHD Meds", time: "Morning", popped: false },
+                { id: "2", name: "Vitamin D", time: "Morning", popped: false },
+                { id: "3", name: "Magnesium", time: "Evening", popped: false }
+            ],
+            sensoryLog: [
+                { id: "1", trigger: "Supermarket fluorescent lights", soothing: "Wore noise-canceling headphones & hoodie", date: "May 30" }
+            ]
+        };
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('lotus_selfcare_state');
+                return saved ? JSON.parse(saved) : defaultState;
+            });
+            const [activeTab, setActiveTab] = React.useState("spoons");
+            const [sidebarOpen, setSidebarOpen] = React.useState(true);
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+            const [soundOn, setSoundOn] = React.useState(true);
+
+            React.useEffect(() => {
+                localStorage.setItem('lotus_selfcare_state', JSON.stringify(state));
+                isMuted = !soundOn;
+            }, [state, soundOn]);
+
+            const tabs = [
+                { id: "spoons", label: "Spoon Meter & Hygiene", icon: "🥄", color: "bg-[#FBCFE8]" },
+                { id: "meds", label: "Medication Blister Pack", icon: "💊", color: "bg-[#FCE7F3]" },
+                { id: "sensory", label: "Sensory Overload Log", icon: "🎧", color: "bg-[#FEE2E2]" }
+            ];
+
+            return (
+                <div class="flex h-screen overflow-hidden relative">
+                    {/* Mobile Overlay */}
+                    <div 
+                        class={`fixed inset-0 bg-slate-900/40 z-40 transition-opacity md:hidden ${mobileMenuOpen ? 'opacity-100 block' : 'opacity-0 hidden'}`} 
+                        onClick={() => setMobileMenuOpen(false)}
+                    ></div>
+
+                    {/* SIDEBAR - Pure CSS Responsiveness */}
+                    <div class={`h-full border-r-3 border-[#831843] bg-white transition-all duration-300 flex flex-col z-50 fixed md:relative
+                        ${mobileMenuOpen ? 'translate-x-0 w-72' : '-translate-x-full w-72 md:translate-x-0'} 
+                        ${sidebarOpen ? 'md:w-80' : 'md:w-20'}
+                    `}>
+                        
+                        <div class="p-4 md:p-5 border-b-3 border-[#831843] flex items-center justify-between bg-[#FDFBF7]">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl">🪷</span>
+                                {(sidebarOpen || mobileMenuOpen) && (
+                                    <div>
+                                        <h1 class="bubbly-font font-black text-xl text-[#831843] tracking-tight">LOTUS RESET</h1>
+                                        <p class="text-[10px] font-bold text-[#BE185D] uppercase tracking-widest">Self-Care Hub</p>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={() => { playSound(); setSidebarOpen(!sidebarOpen); }} class="p-1.5 lotus-btn bg-white rounded-lg hidden md:block">
+                                {sidebarOpen ? "◀" : "▶"}
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => { playSound(); setActiveTab(tab.id); setMobileMenuOpen(false); }}
+                                    class={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[#831843] text-left font-bold transition-all ${
+                                        activeTab === tab.id ? `${tab.color} translate-x-1 shadow-[3px_3px_0px_0px_#831843]` : 'bg-white hover:bg-[#FDFBF7]'
+                                    }`}
+                                >
+                                    <span class="text-2xl">{tab.icon}</span>
+                                    {(sidebarOpen || mobileMenuOpen) && <span class="text-sm">{tab.label}</span>}
+                                </button>
+                            ))}
+                        </div>
+
+                        {(sidebarOpen || mobileMenuOpen) && (
+                            <div class="p-4 border-t-3 border-[#831843] bg-[#FDFBF7] space-y-2">
+                                <button onClick={() => { playSound(); setSoundOn(!soundOn); }} class="w-full text-xs py-3 bg-white rounded-xl border-2 border-[#831843] font-bold">
+                                    {soundOn ? "🔊 Sounds Active" : "🔇 Sounds Muted"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MAIN CONTENT */}
+                    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#FDFBF7]">
+                        <header class="p-4 border-b-3 border-[#831843] bg-white flex items-center justify-between md:hidden z-10">
+                            <button onClick={() => {playSound(); setMobileMenuOpen(true);}} class="p-2 lotus-btn bg-[#FDFBF7] rounded-xl border-2 border-[#831843] font-bold">
+                                🍔 Menu
+                            </button>
+                            <span class="bubbly-font font-black text-lg text-[#831843]">LOTUS RESET</span>
+                        </header>
+
+                        <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                            {activeTab === "spoons" && <SpoonView state={state} setState={setState} />}
+                            {activeTab === "meds" && <MedicationView state={state} setState={setState} />}
+                            {activeTab === "sensory" && <SensoryView state={state} setState={setState} />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 1. SPOON METER & HYGIENE MENU
+        // ==========================================
+        function SpoonView({ state, setState }) {
+            const [newItem, setNewItem] = React.useState("");
+            const [spoonsReq, setSpoonsReq] = React.useState(1);
+
+            const handleSpoonChange = (val) => {
+                playSound('spoon');
+                setState({ ...state, spoons: val });
+            };
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newItem) return;
+                playSound('click');
+                setState({ ...state, hygieneTasks: [{ id: Date.now().toString(), text: newItem, spoonsNeeded: parseInt(spoonsReq), done: false }, ...state.hygieneTasks] });
+                setNewItem("");
+            };
+
+            const toggleCheck = (id) => {
+                playSound('success');
+                setState({ ...state, hygieneTasks: state.hygieneTasks.map(t => t.id === id ? { ...t, done: !t.done } : t) });
+            };
+
+            const handleDelete = (id) => {
+                playSound('click');
+                setState({ ...state, hygieneTasks: state.hygieneTasks.filter(t => t.id !== id) });
+            };
+
+            return (
+                <div id="view-spoons" class="space-y-6 max-w-5xl mx-auto">
+                    <div class="lotus-card p-5 lg:p-8 bg-[#FBCFE8] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="bubbly-font text-2xl lg:text-4xl font-black text-[#831843]">Spoon Meter & Hygiene 🥄</h2>
+                            <p class="font-semibold text-[#9D174D] mt-2 text-sm lg:text-base">Executive dysfunction makes showers feel like climbing Mount Everest. Assess your energy, and pick a task that fits.</p>
+                        </div>
+                        <button onClick={() => exportScreenshot('view-spoons', 'my_spoon_meter.png')} class="px-5 py-2.5 bg-white border-2 border-[#831843] rounded-full font-bold text-sm lotus-btn flex-shrink-0 self-start lg:self-auto">
+                            📸 Export Status
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {/* Spoon Battery */}
+                        <div class="md:col-span-1 xl:col-span-1 lotus-card p-5 lg:p-6 bg-white space-y-6 text-center">
+                            <h3 class="bubbly-font font-black text-xl">My Spoons Today</h3>
+                            <p class="text-xs text-slate-500 font-bold">How much energy do you have right now?</p>
+                            
+                            <div class="flex flex-wrap justify-center gap-3 py-4">
+                                {[1, 2, 3, 4, 5].map(num => (
+                                    <button 
+                                        key={num} 
+                                        onClick={() => handleSpoonChange(num)}
+                                        class={`text-3xl md:text-4xl transition-all hover:scale-110 ${state.spoons >= num ? 'grayscale-0' : 'grayscale opacity-30'}`}
+                                    >
+                                        🥄
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <div class="p-4 bg-rose-50 border-2 border-rose-200 rounded-xl">
+                                <span class="font-black text-rose-800 text-lg">{state.spoons} Spoons Available</span>
+                                <p class="text-xs text-rose-600 font-bold mt-1">
+                                    {state.spoons <= 2 ? "Low energy day. Stick to basics. Zero guilt." : "Decent energy! Let's get a few things done."}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Hygiene Menu */}
+                        <div class="md:col-span-1 xl:col-span-2 lotus-card p-5 lg:p-6 bg-white space-y-4">
+                            <h3 class="bubbly-font font-black text-xl">🛀 The "Struggle Care" Menu</h3>
+
+                            <form onSubmit={handleAdd} class="flex flex-col sm:flex-row gap-2">
+                                <input type="text" value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="e.g. Put on deodorant" class="flex-1 p-3 border-2 border-[#831843] rounded-xl text-sm font-semibold bg-[#FDFBF7]" />
+                                <div class="flex gap-2">
+                                    <select value={spoonsReq} onChange={e => setSpoonsReq(e.target.value)} class="flex-1 sm:flex-none p-3 border-2 border-[#831843] rounded-xl text-sm font-bold bg-[#FCE7F3] text-[#831843]">
+                                        <option value="0">0 Spoons</option>
+                                        <option value="1">1 Spoon</option>
+                                        <option value="2">2 Spoons</option>
+                                        <option value="3">3 Spoons</option>
+                                        <option value="4">4+ Spoons</option>
+                                    </select>
+                                    <button type="submit" class="px-5 py-3 bg-[#FBCFE8] border-2 border-[#831843] rounded-xl font-bold lotus-btn">+</button>
+                                </div>
+                            </form>
+
+                            <div class="space-y-3 pt-2">
+                                {state.hygieneTasks.map(task => {
+                                    const canDo = state.spoons >= task.spoonsNeeded;
+                                    return (
+                                        <div key={task.id} class={`p-3 border-2 border-[#831843] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${task.done ? 'bg-slate-100 opacity-50' : (canDo ? 'bg-[#FDFBF7] shadow-[3px_3px_0px_0px_#FBCFE8]' : 'bg-slate-50 opacity-40 grayscale')}`}>
+                                            <div class="flex items-start sm:items-center gap-3">
+                                                <button onClick={() => { if(canDo || task.done) toggleCheck(task.id); else { playSound('click'); showToast("Not enough spoons right now. Rest first. 🤍"); } }} class={`mt-1 sm:mt-0 flex-shrink-0 w-6 h-6 rounded-md border-2 border-[#831843] flex items-center justify-center font-bold text-xs ${task.done ? 'bg-[#831843] text-white' : 'bg-white'}`}>
+                                                    {task.done ? "✓" : ""}
+                                                </button>
+                                                <span class={`font-bold text-sm ${task.done ? 'line-through text-slate-500' : 'text-[#831843]'}`}>{task.text}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0 pl-9 sm:pl-0">
+                                                <span class="text-[10px] font-black uppercase bg-[#FCE7F3] border border-[#FBCFE8] text-[#9D174D] px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                    Requires {task.spoonsNeeded} 🥄
+                                                </span>
+                                                <button onClick={() => handleDelete(task.id)} class="text-rose-400 hover:text-rose-600 font-bold px-2 py-1">✕</button>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 2. MEDICATION BLISTER PACK
+        // ==========================================
+        function MedicationView({ state, setState }) {
+            const [newMed, setNewMed] = React.useState({ name: "", time: "Morning" });
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newMed.name) return;
+                playSound('click');
+                setState({ ...state, medications: [...state.medications, { id: Date.now().toString(), name: newMed.name, time: newMed.time, popped: false }] });
+                setNewMed({ name: "", time: "Morning" });
+            };
+
+            const popPill = (id, isPopped) => {
+                if(!isPopped) {
+                    playSound('pop');
+                    showToast("💊 Pill popped! Great job.");
+                } else {
+                    playSound('click');
+                }
+                setState({ ...state, medications: state.medications.map(m => m.id === id ? { ...m, popped: !m.popped } : m) });
+            };
+
+            const handleDelete = (id) => {
+                playSound('click');
+                setState({ ...state, medications: state.medications.filter(m => m.id !== id) });
+            };
+
+            const resetPack = () => {
+                playSound('click');
+                setState({ ...state, medications: state.medications.map(m => ({ ...m, popped: false })) });
+            };
+
+            return (
+                <div class="space-y-6 max-w-4xl mx-auto">
+                    <div class="lotus-card p-5 lg:p-6 bg-[#FCE7F3] rounded-3xl flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+                        <div>
+                            <h2 class="bubbly-font text-2xl lg:text-3xl font-black text-[#831843]">Medication Blister Pack 💊</h2>
+                            <p class="font-semibold text-[#9D174D] mt-1 text-sm lg:text-base">Tap the pills to "pop" them out. Hear the satisfying foil crunch and never double-dose again.</p>
+                        </div>
+                        <button onClick={resetPack} class="px-4 py-2.5 bg-white border-2 border-[#831843] rounded-xl font-bold text-xs lotus-btn text-[#831843] self-start lg:self-auto">
+                            Reset Daily Pack 🔄
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div class="md:col-span-1 xl:col-span-1 lotus-card p-5 lg:p-6 bg-white space-y-4 h-fit">
+                            <h3 class="bubbly-font font-black text-lg">➕ Add Prescription</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div><label class="text-xs font-bold block mb-1">Medication / Vitamin</label><input type="text" value={newMed.name} onChange={e => setNewMed({...newMed, name: e.target.value})} placeholder="e.g. Concerta, Iron" class="w-full p-2.5 border-2 border-[#831843] rounded-xl text-sm bg-[#FDFBF7]" /></div>
+                                <div><label class="text-xs font-bold block mb-1">Time of Day</label><select value={newMed.time} onChange={e => setNewMed({...newMed, time: e.target.value})} class="w-full p-2.5 border-2 border-[#831843] rounded-xl text-sm font-bold text-[#831843]"><option>Morning</option><option>Afternoon</option><option>Evening</option><option>Before Bed</option></select></div>
+                                <button type="submit" class="w-full p-3 bg-[#FBCFE8] border-2 border-[#831843] rounded-xl font-bold lotus-btn text-sm">Add to Pack</button>
+                            </form>
+                        </div>
+
+                        <div class="md:col-span-1 xl:col-span-2 lotus-card p-5 lg:p-8 bg-slate-200 border-4 border-slate-300 rounded-3xl relative overflow-hidden">
+                            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#831843_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                            
+                            <h3 class="font-black text-slate-500 uppercase tracking-widest text-center mb-6 relative z-10 text-sm lg:text-base">PUSH TO POP FOIL</h3>
+                            
+                            <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6 relative z-10">
+                                {state.medications.map(med => (
+                                    <div key={med.id} class="flex flex-col items-center gap-2">
+                                        <div 
+                                            onClick={() => popPill(med.id, med.popped)}
+                                            class={`w-16 h-16 lg:w-20 lg:h-20 rounded-full border-4 flex items-center justify-center cursor-pointer transition-all ${med.popped ? 'bg-slate-300 border-slate-400 shadow-inner pill-popped' : 'bg-white border-[#831843] shadow-[0_4px_0_0_#9D174D] hover:-translate-y-1 hover:shadow-[0_6px_0_0_#9D174D]'}`}
+                                        >
+                                            <span class={`text-2xl lg:text-3xl ${med.popped ? 'opacity-0' : 'opacity-100'}`}>💊</span>
+                                        </div>
+                                        <div class="text-center w-full px-2">
+                                            <h4 class={`font-black text-sm truncate ${med.popped ? 'text-slate-400 line-through' : 'text-[#831843]'}`}>{med.name}</h4>
+                                            <span class="text-[10px] font-bold text-slate-500 uppercase block truncate">{med.time}</span>
+                                        </div>
+                                        <button onClick={() => handleDelete(med.id)} class="text-xs text-rose-400 hover:underline py-1">Remove</button>
+                                    </div>
+                                ))}
+                                {state.medications.length === 0 && (
+                                    <div class="col-span-full text-center text-slate-400 font-bold py-8">Pack is empty. Stay healthy!</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 3. SENSORY OVERLOAD LOG
+        // ==========================================
+        function SensoryView({ state, setState }) {
+            const [newTrigger, setNewTrigger] = React.useState("");
+            const [newSoothing, setNewSoothing] = React.useState("");
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newTrigger) return;
+                playSound('success');
+                const date = new Date().toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
+                setState({
+                    ...state,
+                    sensoryLog: [{ id: Date.now().toString(), trigger: newTrigger, soothing: newSoothing, date: date }, ...state.sensoryLog]
+                });
+                setNewTrigger(""); setNewSoothing("");
+            };
+
+            const handleDelete = (id) => {
+                playSound('click');
+                setState({ ...state, sensoryLog: state.sensoryLog.filter(s => s.id !== id) });
+            };
+
+            return (
+                <div class="space-y-6 max-w-4xl mx-auto">
+                    <div class="lotus-card p-5 lg:p-6 bg-[#FEE2E2] rounded-3xl flex justify-between items-center">
+                        <div>
+                            <h2 class="bubbly-font text-2xl lg:text-3xl font-black text-[#991B1B]">Sensory Overload Log 🎧</h2>
+                            <p class="font-semibold text-[#B91C1C] mt-1 text-sm lg:text-base">Track what causes meltdowns (loud noises, textures) and note what coping mechanisms actually worked.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div class="md:col-span-1 xl:col-span-1 lotus-card p-5 lg:p-6 bg-white space-y-4 h-fit">
+                            <h3 class="bubbly-font font-black text-lg">📝 Log an Event</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-bold block mb-1 text-rose-800">What triggered you?</label>
+                                    <input type="text" value={newTrigger} onChange={e => setNewTrigger(e.target.value)} placeholder="e.g. Scratchy sweater tag" class="w-full p-2.5 border-2 border-rose-800 rounded-xl text-sm bg-rose-50" />
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold block mb-1 text-emerald-800">What helped soothe it?</label>
+                                    <input type="text" value={newSoothing} onChange={e => setNewSoothing(e.target.value)} placeholder="e.g. Changed clothes, deep breaths" class="w-full p-2.5 border-2 border-emerald-800 rounded-xl text-sm bg-emerald-50" />
+                                </div>
+                                <button type="submit" class="w-full p-3 bg-[#FECACA] border-2 border-rose-800 rounded-xl font-bold text-rose-900 text-sm">Save to Log</button>
+                            </form>
+                        </div>
+
+                        <div class="md:col-span-1 xl:col-span-2 space-y-4">
+                            {state.sensoryLog.map(log => (
+                                <div key={log.id} class="lotus-card p-4 lg:p-5 bg-[#FDFBF7] space-y-3">
+                                    <div class="flex justify-between items-start border-b-2 border-slate-100 pb-2">
+                                        <span class="text-xs font-bold text-slate-400">{log.date}</span>
+                                        <button onClick={() => handleDelete(log.id)} class="text-slate-400 hover:text-rose-500 font-bold px-2 py-1">✕</button>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <span class="text-[10px] font-black uppercase text-rose-600 tracking-wider">Trigger</span>
+                                            <p class="font-bold text-sm text-[#831843] mt-1">{log.trigger}</p>
+                                        </div>
+                                        {log.soothing && (
+                                            <div>
+                                                <span class="text-[10px] font-black uppercase text-emerald-600 tracking-wider">Coping Strategy</span>
+                                                <p class="font-bold text-sm text-slate-700 mt-1">{log.soothing}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            {state.sensoryLog.length === 0 && (
+                                <p class="text-center py-8 text-slate-400 font-bold italic">No sensory events logged. Hope you're feeling calm today! 🪷</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Wealth Visualizer | By Your Brand</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F8F9F5; /* Oatmilk background */
+            color: #112A22; /* Deep Emerald/Forest text */
+        }
+
+        .serif-font {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Aesthetic Soft Brutalism */
+        .freebie-card {
+            background-color: #FFFFFF;
+            border: 2px solid #112A22;
+            box-shadow: 4px 4px 0px 0px #A7C4B5; /* Soft Sage shadow */
+            border-radius: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .freebie-btn {
+            border: 2px solid #112A22;
+            box-shadow: 3px 3px 0px 0px #112A22;
+            transition: all 0.15s ease;
+        }
+        .freebie-btn:active {
+            transform: translate(3px, 3px);
+            box-shadow: 0px 0px 0px 0px #112A22;
+        }
+
+        /* Animated Upsell Banner */
+        .upsell-gradient {
+            background: linear-gradient(270deg, #A855F7, #EC4899, #F59E0B);
+            background-size: 400% 400%;
+            animation: gradient-shift 6s ease infinite;
+            color: white;
+        }
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Chart Bar Animations */
+        .bar-grow {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #F8F9F5; }
+        ::-webkit-scrollbar-thumb { background: #A7C4B5; border-radius: 4px; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <div id="root" class="flex-grow flex flex-col"></div>
+
+    <script type="text/babel">
+        // --- SOUND ENGINE ---
+        const playClick = () => {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+                osc.start(); osc.stop(ctx.currentTime + 0.05);
+            } catch(e) {}
+        };
+
+        const exportImg = async (id, name) => {
+            playClick();
+            const el = document.getElementById(id);
+            const btn = document.getElementById('export-btn');
+            if (btn) btn.style.display = 'none'; // Hide button during screenshot
+            
+            const canvas = await html2canvas(el, { backgroundColor: '#F8F9F5', scale: 2 });
+            const link = document.createElement('a');
+            link.download = `${name}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            
+            if (btn) btn.style.display = 'block';
+        };
+
+        function App() {
+            // State for Net Worth
+            const [assets, setAssets] = React.useState({ cash: 5000, stocks: 2000, crypto: 500 });
+            const [liabilities, setLiabilities] = React.useState({ debt: 1500 });
+
+            // State for Compound Calculator
+            const [calc, setCalc] = React.useState({ initial: 1000, monthly: 200, years: 10, rate: 8 });
+
+            // Calculations
+            const totalAssets = Object.values(assets).reduce((a, b) => a + (parseFloat(b)||0), 0);
+            const totalLiabilities = parseFloat(liabilities.debt) || 0;
+            const netWorth = totalAssets - totalLiabilities;
+
+            // Compound Interest Math: A = P(1+r/n)^(nt) + PMT * [((1+r/n)^(nt) - 1) / (r/n)]
+            const r = calc.rate / 100;
+            const n = 12; // monthly compounded
+            const t = calc.years;
+            const P = parseFloat(calc.initial) || 0;
+            const PMT = parseFloat(calc.monthly) || 0;
+            
+            const futureValue = (P * Math.pow(1 + r/n, n*t)) + (PMT * ((Math.pow(1 + r/n, n*t) - 1) / (r/n)));
+            const totalInvested = P + (PMT * 12 * t);
+            const totalInterest = futureValue - totalInvested;
+
+            return (
+                <div class="flex-grow flex flex-col">
+                    
+                    {/* --- THE UPSELL BANNER (Crucial for Lead Magnet) --- */}
+                    {/* เปลี่ยนลิงก์ href ด้านล่างเป็นลิงก์ร้าน Etsy ของคุณ */}
+                    <a 
+                        href="https://www.etsy.com/" 
+                        target="_blank" 
+                        onClick={playClick}
+                        class="upsell-gradient p-3 md:p-4 text-center block cursor-pointer hover:opacity-95 transition-opacity z-50 sticky top-0"
+                    >
+                        <div class="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4">
+                            <span class="font-extrabold text-sm md:text-base tracking-wide">✨ Ready to take full control of your money?</span>
+                            <span class="text-xs font-black bg-white text-[#A855F7] px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md">
+                                Get The Ultimate Financial Reset Planner ➔
+                            </span>
+                        </div>
+                    </a>
+
+                    <div class="max-w-5xl mx-auto w-full p-4 md:p-8 space-y-8" id="freebie-export-zone">
+                        
+                        {/* Header */}
+                        <div class="text-center space-y-3 pt-4 pb-8">
+                            <span class="text-xs font-black uppercase tracking-widest text-[#4B7355] bg-[#E2ECE6] px-3 py-1 rounded-full border border-[#A7C4B5]">Free Tool</span>
+                            <h1 class="text-4xl md:text-5xl font-black text-[#112A22] serif-font">Wealth Visualizer</h1>
+                            <p class="font-semibold text-[#4B7355]">A sneak peek into your financial future. Build your empire.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            
+                            {/* --- NET WORTH CALCULATOR --- */}
+                            <div class="freebie-card p-6 md:p-8 bg-white space-y-6">
+                                <h2 class="font-extrabold text-2xl border-b-2 border-slate-100 pb-2">💰 Net Worth Check</h2>
+                                
+                                <div class="space-y-4">
+                                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Your Assets (Own)</h3>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-xs font-bold block mb-1">Cash / Bank ($)</label>
+                                            <input type="number" value={assets.cash} onChange={e => {playClick(); setAssets({...assets, cash: e.target.value})}} class="w-full p-2.5 border-2 border-[#112A22] rounded-xl font-bold bg-[#F8F9F5] focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-bold block mb-1">Stocks / ETF ($)</label>
+                                            <input type="number" value={assets.stocks} onChange={e => {playClick(); setAssets({...assets, stocks: e.target.value})}} class="w-full p-2.5 border-2 border-[#112A22] rounded-xl font-bold bg-[#F8F9F5] focus:outline-none" />
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label class="text-xs font-bold block mb-1">Crypto / Other ($)</label>
+                                            <input type="number" value={assets.crypto} onChange={e => {playClick(); setAssets({...assets, crypto: e.target.value})}} class="w-full p-2.5 border-2 border-[#112A22] rounded-xl font-bold bg-[#F8F9F5] focus:outline-none" />
+                                        </div>
+                                    </div>
+
+                                    <h3 class="text-xs font-black text-rose-400 uppercase tracking-widest pt-2">Your Liabilities (Owe)</h3>
+                                    <div>
+                                        <label class="text-xs font-bold block mb-1 text-rose-800">Total Debts / Loans ($)</label>
+                                        <input type="number" value={liabilities.debt} onChange={e => {playClick(); setLiabilities({debt: e.target.value})}} class="w-full p-2.5 border-2 border-rose-800 rounded-xl font-bold bg-rose-50 focus:outline-none" />
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-[#112A22] text-white rounded-2xl text-center shadow-lg relative overflow-hidden">
+                                    <div class="absolute -right-4 -top-4 text-6xl opacity-20">📈</div>
+                                    <span class="text-sm font-bold text-[#A7C4B5] uppercase tracking-widest block mb-1 relative z-10">Current Net Worth</span>
+                                    <span class="text-4xl md:text-5xl font-black serif-font relative z-10">${netWorth.toLocaleString(undefined, {maximumFractionDigits:0})}</span>
+                                </div>
+
+                                {/* Asset Allocation Visual Bar */}
+                                {totalAssets > 0 && (
+                                    <div class="space-y-2 pt-2">
+                                        <div class="flex h-4 rounded-full overflow-hidden border border-slate-200">
+                                            <div class="bg-[#112A22] bar-grow" style={{width: `${((assets.cash||0)/totalAssets)*100}%`}}></div>
+                                            <div class="bg-[#4B7355] bar-grow" style={{width: `${((assets.stocks||0)/totalAssets)*100}%`}}></div>
+                                            <div class="bg-[#A7C4B5] bar-grow" style={{width: `${((assets.crypto||0)/totalAssets)*100}%`}}></div>
+                                        </div>
+                                        <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                                            <span class="text-[#112A22]">■ Cash</span>
+                                            <span class="text-[#4B7355]">■ Stocks</span>
+                                            <span class="text-[#A7C4B5]">■ Crypto</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* --- COMPOUND SNOWBALL SIMULATOR --- */}
+                            <div class="freebie-card p-6 md:p-8 bg-[#E2ECE6] space-y-6">
+                                <h2 class="font-extrabold text-2xl border-b-2 border-[#A7C4B5] pb-2 text-[#112A22]">⛄ Dividend Snowball</h2>
+                                
+                                <div class="space-y-4">
+                                    <p class="text-sm font-semibold text-[#4B7355]">See how fast your money grows if you just invest a little bit every single month.</p>
+                                    
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-xs font-bold block mb-1">Initial Invest ($)</label>
+                                            <input type="number" value={calc.initial} onChange={e => {playClick(); setCalc({...calc, initial: e.target.value})}} class="w-full p-2.5 border-2 border-[#112A22] rounded-xl font-bold bg-white focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-bold block mb-1 text-[#112A22]">Monthly Add ($)</label>
+                                            <input type="number" value={calc.monthly} onChange={e => {playClick(); setCalc({...calc, monthly: e.target.value})}} class="w-full p-2.5 border-2 border-[#112A22] rounded-xl font-bold bg-white focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-bold block mb-1">Time (Years)</label>
+                                            <input type="number" value={calc.years} onChange={e => {playClick(); setCalc({...calc, years: e.target.value})}} class="w-full p-2.5 border-2 border-[#112A22] rounded-xl font-bold bg-white focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-bold block mb-1">Est. Return (%)</label>
+                                            <input type="number" value={calc.rate} onChange={e => {playClick(); setCalc({...calc, rate: e.target.value})}} class="w-full p-2.5 border-2 border-[#112A22] rounded-xl font-bold bg-white focus:outline-none" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-white border-2 border-[#112A22] rounded-2xl space-y-4 shadow-inner">
+                                    <div class="text-center">
+                                        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">In {calc.years} Years You Will Have</span>
+                                        <div class="text-4xl font-black text-[#112A22] serif-font pt-1">${futureValue.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                                    </div>
+
+                                    {/* Visual Bar showing Principal vs Interest */}
+                                    <div class="space-y-1 pt-2">
+                                        <div class="flex h-6 rounded-full overflow-hidden border-2 border-[#112A22]">
+                                            <div class="bg-[#112A22] bar-grow flex items-center justify-center text-[10px] text-white font-bold" style={{width: `${(totalInvested/futureValue)*100}%`}}>You Saved</div>
+                                            <div class="bg-[#A7C4B5] bar-grow flex items-center justify-center text-[10px] text-[#112A22] font-bold" style={{width: `${(totalInterest/futureValue)*100}%`}}>Free Money</div>
+                                        </div>
+                                        <div class="flex justify-between text-xs font-bold mt-1">
+                                            <span class="text-[#112A22]">Total Saved: ${totalInvested.toLocaleString()}</span>
+                                            <span class="text-[#4B7355]">Interest Earned: ${totalInterest.toLocaleString(undefined, {maximumFractionDigits:0})}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Export Button */}
+                        <div class="flex justify-center pt-4" id="export-btn">
+                            <button 
+                                onClick={() => exportImg('freebie-export-zone', 'My_Wealth_Goals')}
+                                class="px-8 py-4 bg-[#112A22] text-white font-black rounded-full uppercase tracking-widest text-sm freebie-btn flex items-center gap-2"
+                            >
+                                📸 Share Your Wealth Goals
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

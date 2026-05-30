@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matcha Reset - ADHD Meal & Pantry Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F9F8F6; /* Oat Milk Background */
+            color: #2C302E; /* Dark Charcoal */
+        }
+        
+        .heading-font {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Matcha Soft-Brutalism Aesthetics */
+        .matcha-card {
+            background-color: #FFFFFF;
+            border: 2px solid #2C302E;
+            box-shadow: 4px 4px 0px 0px #A3B899; /* Matcha Green Shadow */
+            border-radius: 20px;
+            transition: all 0.2s ease;
+        }
+        .matcha-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #A3B899;
+        }
+
+        .matcha-btn {
+            border: 2px solid #2C302E;
+            box-shadow: 2px 2px 0px 0px #2C302E;
+            transition: all 0.1s ease;
+        }
+        .matcha-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px #2C302E;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F9F8F6;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #A3B899;
+            border-radius: 4px;
+        }
+        
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(44, 48, 46, 0.5);
+            z-index: 40;
+            display: none;
+        }
+        .sidebar-overlay.active {
+            display: block;
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #2C302E;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
+            box-shadow: 4px 4px 0px 0px #A3B899;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(10px); }
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- GLOBAL SOUND MUTE CONTROL ---
+        let isMuted = false;
+
+        // --- SIMPLE SYNTH SOUNDS (Minimal & Clean) ---
+        const playSound = (type = 'click') => {
+            if (isMuted) return; // ดักการเล่นเสียงหากผู้ใช้กด Mute
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                const now = ctx.currentTime;
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'check') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.setValueAtTime(800, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'delete') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                }
+            } catch (e) {}
+        };
+
+        const showToast = (message) => {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        const exportScreenshot = async (elementId, filename) => {
+            try {
+                showToast("📸 Capturing layout...");
+                playSound('click');
+                const element = document.getElementById(elementId);
+                const canvas = await html2canvas(element, { backgroundColor: '#F9F8F6', scale: 2 });
+                const link = document.createElement('a');
+                link.download = filename || 'matcha_reset.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("✅ Image exported!");
+            } catch(e) {
+                showToast("❌ Export failed.");
+            }
+        };
+
+        // --- DEFAULT STATE ---
+        const defaultState = {
+            waterIntake: 0,
+            dailyMeals: {
+                breakfast: "Matcha Latte & Toast",
+                lunch: "Leftover Pasta",
+                dinner: "Quick Chicken Wrap",
+                snack: "Apple & Almonds"
+            },
+            safeFoods: [
+                { id: "1", name: "Instant Ramen + Egg", prep: "5 mins", type: "Hot" },
+                { id: "2", name: "Peanut Butter Sandwich", prep: "2 mins", type: "Cold" },
+                { id: "3", name: "Cereal with Oat Milk", prep: "1 min", type: "Cold" }
+            ],
+            fridgeAudit: [
+                { id: "1", name: "Spinach Bag", status: "eat-now" },
+                { id: "2", name: "Greek Yogurt", status: "warning" },
+                { id: "3", name: "Eggs", status: "safe" }
+            ],
+            groceryList: [
+                { id: "1", name: "Oat Milk", checked: false },
+                { id: "2", name: "Bananas", checked: false },
+                { id: "3", name: "Coffee Beans", checked: true }
+            ]
+        };
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('matcha_meal_state');
+                return saved ? JSON.parse(saved) : defaultState;
+            });
+
+            const [activeTab, setActiveTab] = React.useState("dashboard");
+            const [sidebarOpen, setSidebarOpen] = React.useState(window.innerWidth > 768);
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+            
+            // เพิ่ม State สำหรับควบคุมเสียง
+            const [soundOn, setSoundOn] = React.useState(true);
+
+            // เมื่อโหลดแอปครั้งแรกและเมื่อ State เปลี่ยน ให้บันทึกลง Local Storage
+            React.useEffect(() => {
+                localStorage.setItem('matcha_meal_state', JSON.stringify(state));
+                isMuted = !soundOn; // ซิงค์ state เข้ากับ global variable
+            }, [state, soundOn]);
+
+            const handleTabSelect = (tabId) => {
+                playSound('click');
+                setActiveTab(tabId);
+                setMobileMenuOpen(false);
+            };
+
+            const handleResetAll = () => {
+                if(confirm("Wipe all meal plans and lists?")) {
+                    playSound('delete');
+                    setState(defaultState);
+                    showToast("App reset to default.");
+                }
+            };
+
+            const tabs = [
+                { id: "dashboard", label: "Today's Plate", icon: "🍵", color: "bg-[#D1E2C4]" },
+                { id: "vault", label: "Low-Energy Vault", icon: "🔋", color: "bg-[#F3D8C7]" },
+                { id: "fridge", label: "Fridge Audit", icon: "🧊", color: "bg-[#EAE4E9]" },
+                { id: "grocery", label: "Grocery Checklist", icon: "🛒", color: "bg-[#F7E1D7]" }
+            ];
+
+            return (
+                <div class="flex h-screen overflow-hidden relative">
+                    
+                    {/* Mobile Overlay */}
+                    <div class={`sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
+
+                    {/* --- SIDEBAR --- */}
+                    <div class={`h-full border-r-2 border-[#2C302E] bg-white transition-all duration-300 flex flex-col z-50 
+                        ${window.innerWidth <= 768 ? (mobileMenuOpen ? 'fixed inset-y-0 left-0 w-72' : 'fixed -translate-x-full w-72') : (sidebarOpen ? 'w-80' : 'w-20')}`}>
+                        
+                        <div class="p-5 border-b-2 border-[#2C302E] flex items-center justify-between bg-[#F9F8F6]">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl">🍵</span>
+                                {(sidebarOpen || mobileMenuOpen) && (
+                                    <div>
+                                        <h1 class="heading-font font-black text-xl text-[#2C302E] tracking-tight">MATCHA RESET</h1>
+                                        <p class="text-[10px] font-bold text-[#A3B899] uppercase tracking-widest">Meal Planner</p>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={() => { playSound(); if(window.innerWidth > 768) setSidebarOpen(!sidebarOpen); else setMobileMenuOpen(false); }} class="p-1.5 matcha-btn bg-white rounded-lg hidden md:block">
+                                {sidebarOpen ? "◀" : "▶"}
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => handleTabSelect(tab.id)}
+                                    class={`w-full flex items-center gap-4 p-4 rounded-xl border-2 border-[#2C302E] text-left font-bold transition-all ${
+                                        activeTab === tab.id ? `${tab.color} translate-x-1 shadow-[3px_3px_0px_0px_#2C302E]` : 'bg-white hover:bg-[#F9F8F6]'
+                                    }`}
+                                >
+                                    <span class="text-2xl">{tab.icon}</span>
+                                    {(sidebarOpen || mobileMenuOpen) && <span class="text-sm">{tab.label}</span>}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Controls Area: Sound & Reset Buttons */}
+                        {(sidebarOpen || mobileMenuOpen) && (
+                            <div class="p-4 border-t-2 border-[#2C302E] bg-[#F9F8F6] space-y-2">
+                                
+                                {/* SOUND TOGGLE BUTTON (เพิ่มแล้วตรงนี้) */}
+                                <button 
+                                    onClick={() => { playSound(); setSoundOn(!soundOn); }} 
+                                    class={`w-full text-xs py-3 rounded-xl border-2 border-[#2C302E] font-bold matcha-btn transition-colors ${
+                                        soundOn ? 'bg-white text-[#2C302E]' : 'bg-rose-100 text-rose-700'
+                                    }`}
+                                >
+                                    {soundOn ? "🔊 Sounds Active" : "🔇 Sounds Muted"}
+                                </button>
+
+                                <button onClick={handleResetAll} class="w-full text-xs py-3 text-rose-600 bg-white rounded-xl border-2 border-rose-600 font-bold hover:bg-rose-50 transition-colors">
+                                    🚨 Reset All Data
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* --- MAIN CONTENT --- */}
+                    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#F9F8F6]">
+                        
+                        <header class="p-4 border-b-2 border-[#2C302E] bg-white flex items-center justify-between md:hidden">
+                            <button onClick={() => {playSound(); setMobileMenuOpen(true);}} class="p-2 matcha-btn bg-[#F9F8F6] rounded-xl border-2 border-[#2C302E] font-bold">
+                                🍔 Menu
+                            </button>
+                            <span class="heading-font font-black text-lg tracking-tight">MATCHA RESET</span>
+                        </header>
+
+                        <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                            {activeTab === "dashboard" && <DashboardView state={state} setState={setState} />}
+                            {activeTab === "vault" && <SafeFoodsView state={state} setState={setState} />}
+                            {activeTab === "fridge" && <FridgeAuditView state={state} setState={setState} />}
+                            {activeTab === "grocery" && <GroceryView state={state} setState={setState} />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 1. DASHBOARD VIEW (Today's Plate)
+        // ==========================================
+        function DashboardView({ state, setState }) {
+            const handleMealChange = (mealType, value) => {
+                setState({ ...state, dailyMeals: { ...state.dailyMeals, [mealType]: value } });
+            };
+
+            const addWater = () => {
+                playSound('check');
+                setState({ ...state, waterIntake: Math.min(8, state.waterIntake + 1) });
+            };
+
+            const resetWater = () => {
+                playSound('delete');
+                setState({ ...state, waterIntake: 0 });
+            };
+
+            return (
+                <div id="view-dashboard" class="space-y-6">
+                    <div class="matcha-card p-6 md:p-8 bg-[#D1E2C4] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="heading-font text-3xl md:text-4xl font-black">Today's Plate 🍵</h2>
+                            <p class="font-semibold text-[#4A5D4E] mt-2">Plan your meals simply. Drink your water. No complex recipes required.</p>
+                        </div>
+                        <button onClick={() => exportScreenshot('view-dashboard', 'todays_plate.png')} class="px-5 py-2.5 bg-white border-2 border-[#2C302E] rounded-full font-bold text-sm matcha-btn">
+                            📸 Export Day
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Daily Meals */}
+                        <div class="lg:col-span-2 matcha-card p-6 bg-white space-y-4">
+                            <h3 class="heading-font font-black text-xl">🍽️ Daily Menu</h3>
+                            <div class="space-y-3">
+                                {Object.keys(state.dailyMeals).map(type => (
+                                    <div key={type} class="flex items-center gap-4 p-3 border-b-2 border-dashed border-[#EAE4E9]">
+                                        <span class="w-24 font-bold text-sm uppercase tracking-wider text-[#A3B899]">{type}</span>
+                                        <input 
+                                            type="text" 
+                                            value={state.dailyMeals[type]}
+                                            onChange={(e) => handleMealChange(type, e.target.value)}
+                                            placeholder="What's for food? Keep it simple."
+                                            class="flex-1 p-2 bg-transparent text-base font-semibold focus:outline-none focus:bg-[#F9F8F6] rounded-lg"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Hydration Tracker */}
+                        <div class="matcha-card p-6 bg-white flex flex-col justify-between space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="heading-font font-black text-xl">💧 Hydration</h3>
+                                <button onClick={resetWater} class="text-xs font-bold text-rose-500 hover:underline">Reset</button>
+                            </div>
+                            
+                            <div class="flex-1 flex flex-col items-center justify-center space-y-4 py-4">
+                                <span class="text-6xl">{state.waterIntake >= 8 ? "🌊" : "💧"}</span>
+                                <span class="font-black text-2xl heading-font">{state.waterIntake} / 8 Glasses</span>
+                                <button onClick={addWater} class="w-full py-3 bg-[#A3B899] text-white border-2 border-[#2C302E] rounded-xl font-bold matcha-btn">
+                                    + Drink Water
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 2. SAFE FOODS VAULT (Low-Energy Meals)
+        // ==========================================
+        function SafeFoodsView({ state, setState }) {
+            const [newFood, setNewFood] = React.useState({ name: "", prep: "", type: "Hot" });
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newFood.name) return;
+                playSound('click');
+                setState({ ...state, safeFoods: [...state.safeFoods, { id: Date.now().toString(), ...newFood }] });
+                setNewFood({ name: "", prep: "", type: "Hot" });
+            };
+
+            const handleDelete = (id) => {
+                playSound('delete');
+                setState({ ...state, safeFoods: state.safeFoods.filter(f => f.id !== id) });
+            };
+
+            return (
+                <div class="space-y-6">
+                    <div class="matcha-card p-6 bg-[#F3D8C7] rounded-3xl">
+                        <h2 class="heading-font text-3xl md:text-4xl font-black">Low-Energy Vault 🔋</h2>
+                        <p class="font-semibold text-[#8B6B56] mt-2">Zero-spoons today? Pick a safe, zero-effort food from your vault and just eat something.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="matcha-card p-6 bg-white space-y-4 h-fit">
+                            <h3 class="heading-font font-black text-lg">➕ Add Safe Food</h3>
+                            <form onSubmit={handleAdd} class="space-y-4">
+                                <div><label class="text-xs font-bold block mb-1">Meal Name</label><input type="text" value={newFood.name} onChange={e => setNewFood({...newFood, name: e.target.value})} placeholder="e.g. Cereal, Instant Noodles" class="w-full p-3 border-2 border-[#2C302E] rounded-xl text-sm" /></div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="text-xs font-bold block mb-1">Prep Time</label><input type="text" value={newFood.prep} onChange={e => setNewFood({...newFood, prep: e.target.value})} placeholder="5 mins" class="w-full p-3 border-2 border-[#2C302E] rounded-xl text-sm" /></div>
+                                    <div><label class="text-xs font-bold block mb-1">Type</label><select value={newFood.type} onChange={e => setNewFood({...newFood, type: e.target.value})} class="w-full p-3 border-2 border-[#2C302E] rounded-xl text-sm bg-white"><option>Hot</option><option>Cold</option></select></div>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-[#F3D8C7] border-2 border-[#2C302E] rounded-xl font-bold matcha-btn text-sm">Save to Vault 🛡️</button>
+                            </form>
+                        </div>
+
+                        <div class="lg:col-span-2 matcha-card p-6 bg-white space-y-4">
+                            <h3 class="heading-font font-black text-lg">🛡️ Your Safe Foods</h3>
+                            {state.safeFoods.length === 0 ? (
+                                <div class="p-8 text-center bg-[#F9F8F6] border-2 border-dashed border-[#EAE4E9] rounded-2xl font-bold text-[#A3B899]">No safe foods listed. Add your go-to lazy meals!</div>
+                            ) : (
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {state.safeFoods.map(food => (
+                                        <div key={food.id} class="p-4 border-2 border-[#2C302E] rounded-xl bg-[#F9F8F6] flex justify-between items-center matcha-btn hover:translate-x-0 hover:translate-y-0">
+                                            <div>
+                                                <h4 class="font-bold text-base">{food.name}</h4>
+                                                <div class="flex gap-2 mt-1 text-xs font-semibold text-gray-500">
+                                                    <span class="bg-white px-2 py-0.5 rounded-full border border-gray-200">⏱️ {food.prep}</span>
+                                                    <span class="bg-white px-2 py-0.5 rounded-full border border-gray-200">{food.type === 'Hot' ? '🔥 Hot' : '❄️ Cold'}</span>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => handleDelete(food.id)} class="text-xl text-rose-400 hover:text-rose-600">×</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 3. FRIDGE AUDIT (Stop Rotting Food)
+        // ==========================================
+        function FridgeAuditView({ state, setState }) {
+            const [newItem, setNewItem] = React.useState("");
+            const [status, setStatus] = React.useState("safe");
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newItem) return;
+                playSound('click');
+                setState({ ...state, fridgeAudit: [...state.fridgeAudit, { id: Date.now().toString(), name: newItem, status }] });
+                setNewItem("");
+            };
+
+            const handleDelete = (id) => {
+                playSound('delete');
+                setState({ ...state, fridgeAudit: state.fridgeAudit.filter(f => f.id !== id) });
+            };
+
+            const updateStatus = (id, newStatus) => {
+                playSound('check');
+                setState({ ...state, fridgeAudit: state.fridgeAudit.map(f => f.id === id ? { ...f, status: newStatus } : f) });
+            };
+
+            const getStatusColor = (s) => {
+                if (s === 'eat-now') return 'bg-rose-100 border-rose-300 text-rose-800';
+                if (s === 'warning') return 'bg-amber-100 border-amber-300 text-amber-800';
+                return 'bg-[#D1E2C4] border-[#A3B899] text-[#4A5D4E]';
+            };
+
+            return (
+                <div class="space-y-6">
+                    <div class="matcha-card p-6 bg-[#EAE4E9] rounded-3xl">
+                        <h2 class="heading-font text-3xl md:text-4xl font-black">Fridge Audit 🧊</h2>
+                        <p class="font-semibold text-[#665D65] mt-2">Stop the ADHD Tax! Track perishables so you don't throw away rotting spinach again.</p>
+                    </div>
+
+                    <div class="matcha-card p-6 bg-white space-y-6">
+                        <form onSubmit={handleAdd} class="flex flex-col md:flex-row gap-3">
+                            <input type="text" value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="e.g. Bag of Spinach, Milk..." class="flex-1 p-3 border-2 border-[#2C302E] rounded-xl font-semibold" />
+                            <select value={status} onChange={e => setStatus(e.target.value)} class="p-3 border-2 border-[#2C302E] rounded-xl font-bold bg-[#F9F8F6]">
+                                <option value="eat-now">🚨 Eat IMMEDIATELY</option>
+                                <option value="warning">⚠️ Going bad soon</option>
+                                <option value="safe">✅ Safe for days</option>
+                            </select>
+                            <button type="submit" class="px-6 py-3 bg-[#2C302E] text-white rounded-xl font-bold matcha-btn">Add to Fridge</button>
+                        </form>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t-2 border-dashed border-[#EAE4E9] pt-6">
+                            {/* Eat Now Column */}
+                            <div class="space-y-3">
+                                <h3 class="font-black text-center text-rose-600 bg-rose-50 py-2 rounded-xl border border-rose-200">🚨 EAT NOW</h3>
+                                {state.fridgeAudit.filter(i => i.status === 'eat-now').map(item => (
+                                    <div key={item.id} class={`p-3 border-2 border-[#2C302E] rounded-xl flex justify-between items-center ${getStatusColor(item.status)}`}>
+                                        <span class="font-bold text-sm">{item.name}</span>
+                                        <div class="flex gap-1">
+                                            <button onClick={() => updateStatus(item.id, 'safe')} class="text-xs bg-white rounded px-2 py-1 border border-black">✅</button>
+                                            <button onClick={() => handleDelete(item.id)} class="text-xs bg-white rounded px-2 py-1 border border-black">🗑️</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Warning Column */}
+                            <div class="space-y-3">
+                                <h3 class="font-black text-center text-amber-600 bg-amber-50 py-2 rounded-xl border border-amber-200">⚠️ USE SOON</h3>
+                                {state.fridgeAudit.filter(i => i.status === 'warning').map(item => (
+                                    <div key={item.id} class={`p-3 border-2 border-[#2C302E] rounded-xl flex justify-between items-center ${getStatusColor(item.status)}`}>
+                                        <span class="font-bold text-sm">{item.name}</span>
+                                        <div class="flex gap-1">
+                                            <button onClick={() => updateStatus(item.id, 'eat-now')} class="text-xs bg-white rounded px-2 py-1 border border-black">🚨</button>
+                                            <button onClick={() => handleDelete(item.id)} class="text-xs bg-white rounded px-2 py-1 border border-black">🗑️</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Safe Column */}
+                            <div class="space-y-3">
+                                <h3 class="font-black text-center text-[#4A5D4E] bg-[#D1E2C4] py-2 rounded-xl border border-[#A3B899]">✅ SAFE</h3>
+                                {state.fridgeAudit.filter(i => i.status === 'safe').map(item => (
+                                    <div key={item.id} class={`p-3 border-2 border-[#2C302E] rounded-xl flex justify-between items-center ${getStatusColor(item.status)}`}>
+                                        <span class="font-bold text-sm">{item.name}</span>
+                                        <div class="flex gap-1">
+                                            <button onClick={() => updateStatus(item.id, 'warning')} class="text-xs bg-white rounded px-2 py-1 border border-black">⚠️</button>
+                                            <button onClick={() => handleDelete(item.id)} class="text-xs bg-white rounded px-2 py-1 border border-black">🗑️</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 4. GROCERY LIST VIEW
+        // ==========================================
+        function GroceryView({ state, setState }) {
+            const [newItem, setNewItem] = React.useState("");
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newItem) return;
+                playSound('click');
+                setState({ ...state, groceryList: [{ id: Date.now().toString(), name: newItem, checked: false }, ...state.groceryList] });
+                setNewItem("");
+            };
+
+            const toggleCheck = (id, currentStatus) => {
+                playSound('check');
+                setState({ ...state, groceryList: state.groceryList.map(g => g.id === id ? { ...g, checked: !currentStatus } : g) });
+            };
+
+            const handleDelete = (id) => {
+                playSound('delete');
+                setState({ ...state, groceryList: state.groceryList.filter(g => g.id !== id) });
+            };
+
+            const clearChecked = () => {
+                playSound('delete');
+                setState({ ...state, groceryList: state.groceryList.filter(g => !g.checked) });
+                showToast("Cleared purchased items!");
+            };
+
+            const pendingCount = state.groceryList.filter(g => !g.checked).length;
+
+            return (
+                <div class="space-y-6 max-w-4xl mx-auto">
+                    <div class="matcha-card p-6 bg-[#F7E1D7] rounded-3xl flex justify-between items-center">
+                        <div>
+                            <h2 class="heading-font text-3xl md:text-4xl font-black">Grocery Checklist 🛒</h2>
+                            <p class="font-semibold text-[#8C6D62] mt-2">{pendingCount} items left to buy.</p>
+                        </div>
+                        <button onClick={clearChecked} class="px-4 py-2 bg-white border-2 border-[#2C302E] rounded-xl font-bold text-xs matcha-btn">
+                            Clear Done
+                        </button>
+                    </div>
+
+                    <div class="matcha-card p-6 bg-white space-y-4">
+                        <form onSubmit={handleAdd} class="flex gap-2">
+                            <input type="text" value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="Add item (e.g. Oat Milk, Eggs)" class="flex-1 p-4 border-2 border-[#2C302E] rounded-2xl font-bold text-lg focus:outline-none bg-[#F9F8F6]" />
+                            <button type="submit" class="px-6 py-4 bg-[#A3B899] text-white border-2 border-[#2C302E] rounded-2xl font-black text-xl matcha-btn">+</button>
+                        </form>
+
+                        <div class="space-y-3 pt-4">
+                            {state.groceryList.length === 0 ? (
+                                <p class="text-center py-8 text-[#A3B899] font-bold">List is empty. Time to restock?</p>
+                            ) : (
+                                state.groceryList.map(item => (
+                                    <div key={item.id} class={`flex items-center justify-between p-4 border-2 border-[#2C302E] rounded-2xl transition-colors ${item.checked ? 'bg-[#F9F8F6] opacity-60' : 'bg-white'}`}>
+                                        <div class="flex items-center gap-4 cursor-pointer flex-1" onClick={() => toggleCheck(item.id, item.checked)}>
+                                            <div class={`w-8 h-8 rounded-xl border-2 border-[#2C302E] flex items-center justify-center font-bold text-lg ${item.checked ? 'bg-[#A3B899] text-white' : 'bg-white'}`}>
+                                                {item.checked ? "✓" : ""}
+                                            </div>
+                                            <span class={`font-bold text-lg ${item.checked ? 'line-through text-gray-400' : 'text-[#2C302E]'}`}>{item.name}</span>
+                                        </div>
+                                        <button onClick={() => handleDelete(item.id)} class="text-rose-400 text-xl font-bold hover:text-rose-600 px-3">×</button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

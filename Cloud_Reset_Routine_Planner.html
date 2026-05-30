@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Reset - ADHD Routine & Time Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Quicksand:wght@500;600;700&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #F0F9FF; /* Sky-50 */
+            color: #334155; /* Slate-700 */
+        }
+        
+        .bubbly-font {
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        /* Soft Cloud Aesthetics */
+        .cloud-card {
+            background-color: #FFFFFF;
+            border-radius: 32px;
+            box-shadow: 0 10px 40px -10px rgba(56, 189, 248, 0.15);
+            border: 2px solid #E0F2FE;
+            transition: all 0.3s ease;
+        }
+        .cloud-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 50px -10px rgba(56, 189, 248, 0.25);
+        }
+
+        .cloud-btn {
+            border-radius: 9999px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cloud-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #F0F9FF; }
+        ::-webkit-scrollbar-thumb { background: #7DD3FC; border-radius: 10px; }
+        
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(2px); z-index: 40; display: none;
+        }
+        .sidebar-overlay.active { display: block; }
+        
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: #0EA5E9; color: white;
+            padding: 14px 28px; border-radius: 9999px; font-weight: 700; font-size: 14px; z-index: 9999;
+            box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+            animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), fadeOut 0.4s ease 2.5s forwards;
+        }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+
+        /* Cloud Animation */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+    </style>
+</head>
+<body class="antialiased min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- CLOUD AUDIO SYNTHESIZER ---
+        let audioCtx = null;
+        let isMuted = false;
+
+        const initAudio = () => {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        };
+
+        const playSound = (type = 'click') => {
+            if (isMuted) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                
+                if (type === 'click') {
+                    // Soft pop/bubble sound
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'chime') {
+                    // Wind chime success sound
+                    const freqs = [1046.50, 1318.51, 1567.98]; // C6, E6, G6
+                    freqs.forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(f, now + i * 0.08);
+                        g.gain.setValueAtTime(0.05, now + i * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.6);
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.7);
+                    });
+                } else if (type === 'success') {
+                    // 8-bit game complete / level up fanfare
+                    const freqs = [261.63, 329.63, 392.00, 523.25, 659.25, 1046.50]; 
+                    freqs.forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.type = 'square';
+                        o.frequency.setValueAtTime(f, now + i * 0.12);
+                        g.gain.setValueAtTime(0.04, now + i * 0.12);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.6);
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.start(now + i * 0.12); o.stop(now + i * 0.12 + 0.7);
+                    });
+                } else if (type === 'wind') {
+                    // Soft transition wind sweep
+                    const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+                    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const output = noiseBuffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+                    const noiseSource = audioCtx.createBufferSource();
+                    noiseSource.buffer = noiseBuffer;
+                    
+                    const filter = audioCtx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(200, now);
+                    filter.frequency.exponentialRampToValueAtTime(800, now + 1);
+                    filter.frequency.exponentialRampToValueAtTime(200, now + 2);
+
+                    const gain = audioCtx.createGain();
+                    gain.gain.setValueAtTime(0, now);
+                    gain.gain.linearRampToValueAtTime(0.1, now + 1);
+                    gain.gain.linearRampToValueAtTime(0, now + 2);
+
+                    noiseSource.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+                    noiseSource.start(now);
+                }
+            } catch(e) {}
+        };
+
+        const showToast = (message) => {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        };
+
+        const defaultState = {
+            nowTasks: [{ id: "1", text: "Reply to important email" }],
+            notNowTasks: [{ id: "2", text: "Buy new socks" }, { id: "3", text: "Plan weekend trip" }],
+            morningRoutine: [
+                { id: "1", text: "Drink a full glass of water", done: false },
+                { id: "2", text: "Open the curtains for sunlight", done: false },
+                { id: "3", text: "Take meds / vitamins", done: false }
+            ],
+            eveningRoutine: [
+                { id: "4", text: "Set out clothes for tomorrow", done: false },
+                { id: "5", text: "Dim screens to night mode", done: false },
+                { id: "6", text: "5 minutes of brain dump journaling", done: false }
+            ]
+        };
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('cloud_routine_state');
+                return saved ? JSON.parse(saved) : defaultState;
+            });
+            const [activeTab, setActiveTab] = React.useState("nowboard");
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+            const [soundOn, setSoundOn] = React.useState(true);
+
+            React.useEffect(() => {
+                localStorage.setItem('cloud_routine_state', JSON.stringify(state));
+                isMuted = !soundOn;
+            }, [state, soundOn]);
+
+            const tabs = [
+                { id: "nowboard", label: "Now / Not Now Board", icon: "🫧" },
+                { id: "routines", label: "Morning & Night Flow", icon: "🌤️" },
+                { id: "bubble", label: "Visual Time Cloud", icon: "⏱️" },
+                { id: "transition", label: "Transition Buffer", icon: "🌬️" }
+            ];
+
+            return (
+                <div class="flex h-screen overflow-hidden">
+                    <div class={`sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
+
+                    {/* SIDEBAR */}
+                    <div class={`h-full border-r-2 border-[#E0F2FE] bg-white transition-all duration-300 flex flex-col z-50 shadow-lg
+                        ${window.innerWidth <= 768 ? (mobileMenuOpen ? 'fixed inset-y-0 left-0 w-72' : 'fixed -translate-x-full w-72') : 'w-72 relative'}`}>
+                        
+                        <div class="p-6 flex items-center justify-between border-b-2 border-[#E0F2FE] bg-[#F8FAFC]">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl animate-float">☁️</span>
+                                <div>
+                                    <h1 class="bubbly-font font-bold text-lg tracking-tight text-[#0284C7]">CLOUD RESET</h1>
+                                    <p class="text-[10px] font-bold text-[#7DD3FC] uppercase tracking-widest">Time Blindness Aid</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4 space-y-2">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => { playSound(); setActiveTab(tab.id); setMobileMenuOpen(false); }}
+                                    class={`w-full flex items-center gap-4 p-4 rounded-2xl font-bold transition-all ${
+                                        activeTab === tab.id 
+                                            ? 'bg-[#E0F2FE] text-[#0369A1] shadow-inner' 
+                                            : 'bg-transparent text-[#64748B] hover:bg-[#F0F9FF]'
+                                    }`}
+                                >
+                                    <span class="text-xl">{tab.icon}</span>
+                                    <span class="text-sm">{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div class="p-4 border-t-2 border-[#E0F2FE] space-y-2">
+                            <button onClick={() => { playSound(); setSoundOn(!soundOn); }} class="w-full text-xs py-3 bg-[#F8FAFC] rounded-2xl font-bold border border-[#E0F2FE] text-[#475569]">
+                                {soundOn ? "🔊 Sounds Active" : "🔇 Sounds Muted"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* MAIN CONTENT */}
+                    <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+                        <header class="p-4 bg-white border-b-2 border-[#E0F2FE] flex items-center justify-between md:hidden z-10 shadow-sm">
+                            <button onClick={() => { playSound(); setMobileMenuOpen(true); }} class="p-2 rounded-full bg-[#F0F9FF] text-[#0284C7] font-bold">
+                                🍔 Menu
+                            </button>
+                            <span class="bubbly-font font-black text-lg text-[#0284C7]">CLOUD RESET ☁️</span>
+                        </header>
+
+                        <main class="flex-1 overflow-y-auto p-4 md:p-8">
+                            {activeTab === "nowboard" && <NowBoardView state={state} setState={setState} />}
+                            {activeTab === "routines" && <RoutinesView state={state} setState={setState} />}
+                            {activeTab === "bubble" && <VisualTimerView />}
+                            {activeTab === "transition" && <TransitionView />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        function NowBoardView({ state, setState }) {
+            const [newItem, setNewItem] = React.useState("");
+
+            const handleAdd = (e, target) => {
+                e.preventDefault();
+                if (!newItem.trim()) return;
+                playSound('click');
+                const task = { id: Date.now().toString(), text: newItem.trim() };
+                setState(prev => ({ ...prev, [target]: [task, ...prev[target]] }));
+                setNewItem("");
+            };
+
+            const moveTask = (id, from, to) => {
+                playSound('click');
+                setState(prev => {
+                    const task = prev[from].find(t => t.id === id);
+                    return {
+                        ...prev,
+                        [from]: prev[from].filter(t => t.id !== id),
+                        [to]: [task, ...prev[to]]
+                    };
+                });
+            };
+
+            const deleteTask = (id, from) => {
+                playSound('click');
+                setState(prev => ({ ...prev, [from]: prev[from].filter(t => t.id !== id) }));
+            };
+
+            return (
+                <div class="space-y-6 max-w-5xl mx-auto animate-float" style={{animationDuration: '8s'}}>
+                    <div class="cloud-card p-6 md:p-8 bg-gradient-to-r from-[#E0F2FE] to-[#F0F9FF] border-none">
+                        <h2 class="bubbly-font text-3xl font-black text-[#0284C7]">🫧 Now vs. Not Now Board</h2>
+                        <p class="font-semibold text-[#475569] mt-2">ADHD brains see time in two ways: "Right Now" and "Not Now". Drop tasks into these two buckets to stop the overwhelm.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* NOW COLUMN */}
+                        <div class="cloud-card p-6 bg-white space-y-4">
+                            <h3 class="bubbly-font font-black text-xl text-emerald-500 flex items-center gap-2">🔥 RIGHT NOW</h3>
+                            <form onSubmit={(e) => handleAdd(e, 'nowTasks')} class="flex gap-2">
+                                <input type="text" value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="Add immediate task..." class="flex-1 p-3 bg-[#F8FAFC] border-2 border-[#E2E8F0] rounded-2xl text-sm focus:outline-none focus:border-emerald-300" />
+                                <button type="submit" class="px-4 py-2 bg-emerald-100 text-emerald-700 font-bold rounded-2xl hover:bg-emerald-200">+</button>
+                            </form>
+                            <div class="space-y-3 min-h-[200px]">
+                                {state.nowTasks.length === 0 ? <p class="text-center text-slate-400 text-sm mt-10">Nothing is urgent right now. Breathe. 🌬️</p> : null}
+                                {state.nowTasks.map(t => (
+                                    <div key={t.id} class="p-4 rounded-2xl border-2 border-emerald-100 bg-emerald-50/30 flex justify-between items-center group">
+                                        <span class="font-bold text-slate-700">{t.text}</span>
+                                        <div class="flex gap-2">
+                                            <button onClick={() => moveTask(t.id, 'nowTasks', 'notNowTasks')} class="text-xs px-3 py-1 bg-white border border-slate-200 rounded-full font-bold text-slate-500">Later ➡️</button>
+                                            <button onClick={() => deleteTask(t.id, 'nowTasks')} class="text-xs px-2 py-1 bg-white border border-slate-200 rounded-full font-bold text-rose-400">✕</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* NOT NOW COLUMN */}
+                        <div class="cloud-card p-6 bg-white space-y-4 opacity-90">
+                            <h3 class="bubbly-font font-black text-xl text-[#94A3B8] flex items-center gap-2">🧊 NOT NOW (Later)</h3>
+                            <form onSubmit={(e) => handleAdd(e, 'notNowTasks')} class="flex gap-2">
+                                <input type="text" value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="Add task for later..." class="flex-1 p-3 bg-[#F8FAFC] border-2 border-[#E2E8F0] rounded-2xl text-sm focus:outline-none focus:border-slate-300" />
+                                <button type="submit" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200">+</button>
+                            </form>
+                            <div class="space-y-3 min-h-[200px]">
+                                {state.notNowTasks.length === 0 ? <p class="text-center text-slate-400 text-sm mt-10">No pending tasks. ☁️</p> : null}
+                                {state.notNowTasks.map(t => (
+                                    <div key={t.id} class="p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 flex justify-between items-center group">
+                                        <span class="font-bold text-slate-500">{t.text}</span>
+                                        <div class="flex gap-2">
+                                            <button onClick={() => moveTask(t.id, 'notNowTasks', 'nowTasks')} class="text-xs px-3 py-1 bg-emerald-100 border border-emerald-200 rounded-full font-bold text-emerald-700">⬅️ Do Now</button>
+                                            <button onClick={() => deleteTask(t.id, 'notNowTasks')} class="text-xs px-2 py-1 bg-white border border-slate-200 rounded-full font-bold text-rose-400">✕</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function RoutinesView({ state, setState }) {
+            const toggleRoutine = (id, type) => {
+                const isChecking = !state[type].find(t => t.id === id).done;
+                if (isChecking) { playSound('chime'); showToast("Great job! 🫧"); }
+                else { playSound('click'); }
+                
+                setState(prev => ({
+                    ...prev,
+                    [type]: prev[type].map(t => t.id === id ? { ...t, done: !t.done } : t)
+                }));
+            };
+
+            const resetRoutine = (type) => {
+                playSound('click');
+                setState(prev => ({
+                    ...prev,
+                    [type]: prev[type].map(t => ({ ...t, done: false }))
+                }));
+            };
+
+            return (
+                <div class="space-y-6 max-w-4xl mx-auto">
+                    <div class="cloud-card p-6 md:p-8 bg-gradient-to-r from-[#FEF08A] to-[#FFFBEB] border-none text-[#854D0E]">
+                        <h2 class="bubbly-font text-3xl font-black">🌤️ Low-Friction Routines</h2>
+                        <p class="font-semibold mt-2 opacity-80">Don't rely on memory. Follow the steps exactly as written to start and end your day smoothly.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Morning */}
+                        <div class="cloud-card p-6 bg-white">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="bubbly-font font-black text-xl text-amber-500">🌅 Morning Flow</h3>
+                                <button onClick={() => resetRoutine('morningRoutine')} class="text-xs font-bold text-slate-400 hover:text-amber-500">Reset</button>
+                            </div>
+                            <div class="space-y-3">
+                                {state.morningRoutine.map(t => (
+                                    <div key={t.id} onClick={() => toggleRoutine(t.id, 'morningRoutine')} class={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-4 ${t.done ? 'bg-amber-50 border-amber-200 opacity-60' : 'bg-white border-slate-100 hover:border-amber-300 shadow-sm'}`}>
+                                        <div class={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${t.done ? 'bg-amber-400 border-amber-400 text-white' : 'border-slate-300 text-transparent'}`}>✓</div>
+                                        <span class={`font-bold ${t.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{t.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Evening */}
+                        <div class="cloud-card p-6 bg-[#0F172A] border-none text-white shadow-xl">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="bubbly-font font-black text-xl text-indigo-300">🌙 Night Wind-Down</h3>
+                                <button onClick={() => resetRoutine('eveningRoutine')} class="text-xs font-bold text-slate-400 hover:text-indigo-300">Reset</button>
+                            </div>
+                            <div class="space-y-3">
+                                {state.eveningRoutine.map(t => (
+                                    <div key={t.id} onClick={() => toggleRoutine(t.id, 'eveningRoutine')} class={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-4 ${t.done ? 'bg-indigo-900 border-indigo-800 opacity-50' : 'bg-[#1E293B] border-slate-700 hover:border-indigo-500 shadow-sm'}`}>
+                                        <div class={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-slate-600 text-transparent'}`}>✓</div>
+                                        <span class={`font-bold ${t.done ? 'line-through text-slate-400' : 'text-slate-200'}`}>{t.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function VisualTimerView() {
+            const [duration, setDuration] = React.useState(15); // นาที
+            const [timeLeft, setTimeLeft] = React.useState(15 * 60); // วินาที
+            const [isRunning, setIsRunning] = React.useState(false);
+
+            React.useEffect(() => {
+                let timer = null;
+                if (isRunning && timeLeft > 0) {
+                    // นับถอยหลังทีละ 1 วินาที
+                    timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+                } else if (timeLeft <= 0 && isRunning) {
+                    setIsRunning(false);
+                    playSound('success');
+                    showToast("Time's up! Great job! ☁️");
+                }
+                return () => clearInterval(timer);
+            }, [isRunning, timeLeft]);
+
+            const startTimer = (mins) => {
+                playSound('click');
+                setDuration(mins);
+                setTimeLeft(mins * 60);
+                setIsRunning(true);
+            };
+
+            const toggle = () => { playSound('click'); setIsRunning(!isRunning); };
+            const stop = () => { playSound('click'); setIsRunning(false); setTimeLeft(duration * 60); };
+
+            // ฟังก์ชันแปลงวินาทีเป็นรูปแบบ MM:SS เพื่อให้เห็นว่าตัวเลขขยับจริง
+            const formatTime = (seconds) => {
+                const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const s = (seconds % 60).toString().padStart(2, '0');
+                return `${m}:${s}`;
+            };
+
+            // คำนวณความโปร่งแสงตามเวลาที่เหลืออยู่ (ไล่จาก 1.0 ลงไปที่ 0.1)
+            const progress = timeLeft / (duration * 60);
+            const currentOpacity = Math.max(0.1, progress); 
+
+            return (
+                <div class="space-y-6 max-w-3xl mx-auto flex flex-col items-center justify-center min-h-[70vh]">
+                    <div class="text-center space-y-2">
+                        <h2 class="bubbly-font text-3xl font-black text-[#0284C7]">Visual Time Cloud ☁️</h2>
+                        <p class="font-semibold text-[#475569]">Watch the cloud float and slowly fade away. Let the visual guide your focus.</p>
+                    </div>
+
+                    <div class="w-full flex justify-center py-10 relative">
+                        {/* ภาพก้อนเมฆที่จะค่อยๆ จางหายไปและขยับขึ้นลง (animate-float ทำงานเมื่อ isRunning=true) */}
+                        <div 
+                            class={`transition-opacity duration-1000 ease-linear flex items-center justify-center ${isRunning ? 'animate-float' : ''}`}
+                            style={{ opacity: currentOpacity }}
+                        >
+                            <svg width="300" height="200" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-[0_10px_30px_rgba(56,189,248,0.4)]">
+                                <path d="M6.5 17.5C4.01472 17.5 2 15.4853 2 13C2 10.7486 3.65345 8.8856 5.8118 8.55231C6.27627 5.9612 8.5146 4 11 4C13.4346 4 15.5262 5.6791 16.1472 7.91719C18.3188 8.0487 20 9.87002 20 12.05C20 12.1969 19.9915 12.3418 19.975 12.4842C21.1558 13.208 22 14.4925 22 16C22 18.4853 19.9853 20.5 17.5 20.5H6.5Z" fill="url(#paint0_linear)"/>
+                                <defs>
+                                    <linearGradient id="paint0_linear" x1="12" y1="4" x2="12" y2="20.5" gradientUnits="userSpaceOnUse">
+                                        <stop stop-color="#E0F2FE"/>
+                                        <stop offset="1" stop-color="#38BDF8"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        {/* ตัวอักษรเวลานับถอยหลัง */}
+                        <div class="absolute inset-0 flex items-center justify-center flex-col pointer-events-none mt-2">
+                            <span 
+                                class="text-5xl font-black text-[#0369A1] drop-shadow-md tabular-nums transition-opacity duration-1000 ease-linear"
+                                style={{ opacity: currentOpacity }}
+                            >
+                                {formatTime(timeLeft)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="cloud-card p-6 bg-white w-full max-w-md space-y-6 relative z-10">
+                        <div class="grid grid-cols-4 gap-3">
+                            <button onClick={() => startTimer(1)} class="py-3 bg-emerald-50 text-emerald-600 font-bold rounded-2xl hover:bg-emerald-100 text-xs">1 Min<br/>(Test)</button>
+                            <button onClick={() => startTimer(15)} class="py-3 bg-[#F0F9FF] text-[#0284C7] font-bold rounded-2xl hover:bg-[#E0F2FE] text-sm">15 Min</button>
+                            <button onClick={() => startTimer(30)} class="py-3 bg-[#F0F9FF] text-[#0284C7] font-bold rounded-2xl hover:bg-[#E0F2FE] text-sm">30 Min</button>
+                            <button onClick={() => startTimer(60)} class="py-3 bg-[#F0F9FF] text-[#0284C7] font-bold rounded-2xl hover:bg-[#E0F2FE] text-sm">60 Min</button>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onClick={toggle} class={`flex-1 py-4 font-black rounded-2xl text-white shadow-lg ${isRunning ? 'bg-amber-400 hover:bg-amber-500' : 'bg-[#38BDF8] hover:bg-[#0284C7]'}`}>
+                                {isRunning ? "Pause Cloud" : "Start Cloud"}
+                            </button>
+                            <button onClick={stop} class="px-6 py-4 bg-slate-100 text-slate-500 font-bold rounded-2xl hover:bg-slate-200">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function TransitionView() {
+            const [isBreathing, setIsBreathing] = React.useState(false);
+
+            const startBuffer = () => {
+                playSound('wind');
+                setIsBreathing(true);
+                setTimeout(() => {
+                    setIsBreathing(false);
+                    playSound('chime');
+                    showToast("Transition complete. You are ready. ☁️");
+                }, 5000); // 5 seconds demo (in real app could be longer, but 5s is good for web interactiveness)
+            };
+
+            return (
+                <div class="space-y-6 max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[70vh] text-center">
+                    <div class="text-8xl mb-4">🌬️</div>
+                    <h2 class="bubbly-font text-4xl font-black text-[#334155]">The Transition Buffer</h2>
+                    <p class="font-semibold text-[#64748B] text-lg leading-relaxed">
+                        ADHD brains struggle to switch from Task A to Task B. <br/>Don't force it. Hit the button, close your eyes, listen to the wind, and let your brain "reboot".
+                    </p>
+
+                    <button 
+                        onClick={startBuffer}
+                        disabled={isBreathing}
+                        class={`mt-8 px-10 py-5 rounded-full font-black text-xl text-white transition-all duration-1000 ${isBreathing ? 'bg-[#94A3B8] scale-110 shadow-2xl' : 'bg-[#0EA5E9] hover:bg-[#0284C7] shadow-lg hover:shadow-xl hover:-translate-y-1 cloud-btn'}`}
+                    >
+                        {isBreathing ? "Breathe in... Breathe out..." : "Start Mental Reboot (5s)"}
+                    </button>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

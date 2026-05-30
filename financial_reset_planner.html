@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gen Z Financial Reset Web-App Planner</title>
+    <!-- Tailwind CSS for Neo-Brutalism Aesthetic styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel for JSX Compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- html2canvas for Export/Share feature -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FAF6F0;
+        }
+        
+        /* Neo-Brutalism Custom Shadows and Borders for Gen Z Aesthetic */
+        .brutal-card {
+            background-color: #FFFFFF;
+            border: 3px solid #1E293B;
+            box-shadow: 5px 5px 0px 0px #1E293B;
+            transition: all 0.2s ease;
+        }
+        .brutal-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 7px 7px 0px 0px #1E293B;
+        }
+        .brutal-btn {
+            border: 2px solid #1E293B;
+            box-shadow: 3px 3px 0px 0px #1E293B;
+            transition: all 0.1s ease;
+        }
+        .brutal-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px 0px #1E293B;
+        }
+        .brutal-btn-active {
+            background-color: #C084FC !important;
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px 0px #1E293B;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF6F0;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* Mobile Responsive Enhancements */
+        @media (max-width: 768px) {
+            .brutal-card {
+                box-shadow: 3px 3px 0px 0px #1E293B;
+            }
+            .brutal-card:hover {
+                transform: none;
+                box-shadow: 3px 3px 0px 0px #1E293B;
+            }
+            .brutal-btn {
+                box-shadow: 2px 2px 0px 0px #1E293B;
+            }
+        }
+
+        /* Mobile sidebar overlay */
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 25;
+            display: none;
+        }
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Section Reset Button */
+        .section-reset-btn {
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .section-reset-btn:hover {
+            opacity: 1;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1E293B;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(10px); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Global mute variable
+        let isMuted = false;
+
+        // --- SOUND EFFECTS SYNTHESIZER (Dopamine Hits) ---
+        const playDopamineSound = (type = 'click') => {
+            if (isMuted) return; // ดักไม่ให้มีเสียงถ้าถูก Mute
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                if (type === 'click') {
+                    osc.frequency.setValueAtTime(600, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.1);
+                } else if (type === 'success') {
+                    const now = ctx.currentTime;
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((f, i) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.connect(g);
+                        g.connect(ctx.destination);
+                        o.frequency.setValueAtTime(f, now + i * 0.08);
+                        g.gain.setValueAtTime(0.1, now + i * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.3);
+                        o.start(now + i * 0.08);
+                        o.stop(now + i * 0.08 + 0.3);
+                    });
+                } else if (type === 'cancel') {
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.15);
+                }
+            } catch (e) {}
+        };
+
+        // --- TOAST NOTIFICATION ---
+        const showToast = (message) => {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        // --- EXPORT SCREENSHOT FUNCTION ---
+        const exportScreenshot = async (elementId, filename) => {
+            try {
+                showToast("📸 Capturing screenshot...");
+                const element = document.getElementById(elementId);
+                if (!element) { showToast("❌ Could not find section"); return; }
+                const canvas = await html2canvas(element, { 
+                    backgroundColor: '#FAF6F0',
+                    scale: 2,
+                    useCORS: true
+                });
+                const link = document.createElement('a');
+                link.download = filename || 'financial_reset_screenshot.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("✅ Screenshot saved!");
+                playDopamineSound('success');
+            } catch(e) {
+                showToast("❌ Export failed. Try again.");
+            }
+        };
+
+        // --- DEFAULT SAMPLE DATA ---
+        const defaultState = {
+            debts: [
+                { id: "1", name: "Spicy Amex Card", balance: 2400, rate: 22.9, minPay: 75 },
+                { id: "2", name: "Car Loan (My Ride)", balance: 14500, rate: 5.5, minPay: 310 },
+                { id: "3", name: "Klarna Pay-in-4", balance: 350, rate: 0, minPay: 87 }
+            ],
+            budget: {
+                income: 3800,
+                needsPercent: 50,
+                wantsPercent: 30,
+                savingsPercent: 20
+            },
+            bills: [
+                { id: "1", name: "Apartment Rent", amount: 1200, dueDate: "2026-06-01", paid: true },
+                { id: "2", name: "Gym Membership", amount: 45, dueDate: "2026-06-12", paid: false },
+                { id: "3", name: "Car Insurance", amount: 120, dueDate: "2026-06-18", paid: false }
+            ],
+            subscriptions: [
+                { id: "1", name: "Netflix Premium", cost: 22.99, cycle: "Monthly", joy: 3 },
+                { id: "2", name: "ChatGPT Plus", cost: 20.00, cycle: "Monthly", joy: 5 },
+                { id: "3", name: "Aesthetic Hydration App", cost: 4.99, cycle: "Monthly", joy: 1 }
+            ],
+            savings: [
+                { id: "1", name: "Eras Tour Ticket Fund", target: 900, current: 450, color: "#FBCFE8" },
+                { id: "2", name: "Emergency 'Adulting' Cushion", target: 3000, current: 1200, color: "#D9F99D" }
+            ],
+            noSpend: {
+                month: "June 2026",
+                days: Array.from({ length: 30 }, (_, i) => ({
+                    day: i + 1,
+                    status: i < 5 ? (i % 2 === 0 ? "success" : "failed") : "pending"
+                }))
+            },
+            sinkingFunds: [
+                { id: "1", name: "Coachella Trip 2027", target: 1200, current: 400, targetMonth: "2027-04" },
+                { id: "2", name: "Holiday Gifts for Fam", target: 600, current: 150, targetMonth: "2026-12" }
+            ],
+            paycheck: {
+                netPay: 1850,
+                allocations: [
+                    { id: "1", label: "Bills & Essentials", amount: 925 },
+                    { id: "2", label: "Future Me (Savings)", amount: 370 },
+                    { id: "3", label: "Guilt-Free Fun Money", amount: 555 }
+                ]
+            },
+            workbook: [
+                { day: 1, title: "Face the Numbers", desc: "Audit your bank accounts for the last 30 days without crying. Just count the damage.", completed: true },
+                { day: 2, title: "The Unsubscribe Cleanse", desc: "Cancel at least 1 subscription that scores below a '3' on the joy meter.", completed: true },
+                { day: 3, title: "Create Your 'Spicy Save' Jar", desc: "Set up one physical or digital sub-account labeled with a high-dopamine goal.", completed: false },
+                { day: 4, title: "No-Spend Day Prep", desc: "Plan a completely free weekend activity with friends. Zero dollar vibes.", completed: false },
+                { day: 5, title: "Auto-Save Activation", desc: "Set up auto-transfer of just $5 a week to your savings. Set it and forget it.", completed: false },
+                { day: 6, title: "Call Your Subscriptions", desc: "Call your wifi/phone provider and negotiate. Use the 'I might cancel' card.", completed: false },
+                { day: 7, title: "Check Your Credit Score", desc: "Open Credit Karma or your banking app. Know your number, love your number.", completed: false }
+            ]
+        };
+
+        // --- SECTION RESET BUTTON COMPONENT ---
+        function SectionResetBtn({ onReset, label }) {
+            const [showConfirm, setShowConfirm] = React.useState(false);
+            return (
+                <div class="relative inline-block">
+                    {!showConfirm ? (
+                        <button 
+                            onClick={() => setShowConfirm(true)}
+                            class="section-reset-btn text-xs py-1 px-3 bg-rose-50 text-rose-600 rounded-lg border border-rose-200 font-bold hover:bg-rose-100 transition-colors"
+                            title={`Reset ${label} data`}
+                        >
+                            🔄 Reset {label}
+                        </button>
+                    ) : (
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-rose-600">Sure?</span>
+                            <button 
+                                onClick={() => { onReset(); setShowConfirm(false); playDopamineSound('cancel'); showToast(`${label} has been reset!`); }}
+                                class="text-xs py-1 px-2 bg-rose-500 text-white rounded-lg font-bold"
+                            >
+                                Yes
+                            </button>
+                            <button 
+                                onClick={() => setShowConfirm(false)}
+                                class="text-xs py-1 px-2 bg-slate-200 text-slate-700 rounded-lg font-bold"
+                            >
+                                No
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- SHARE/EXPORT BUTTON COMPONENT ---
+        function ShareBtn({ sectionId, filename }) {
+            return (
+                <button 
+                    onClick={() => exportScreenshot(sectionId, filename)}
+                    class="text-xs py-1 px-3 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-200 font-bold hover:bg-indigo-100 transition-colors"
+                    title="Export as image"
+                >
+                    📸 Share
+                </button>
+            );
+        }
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('genz_planner_state');
+                if (saved) {
+                    try { return JSON.parse(saved); } catch(e) { return defaultState; }
+                }
+                return defaultState;
+            });
+
+            const [activeTab, setActiveTab] = React.useState("debt");
+            const [sidebarOpen, setSidebarOpen] = React.useState(window.innerWidth > 768);
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+            
+            // State สำหรับควบคุมเสียง (เพิ่มใหม่)
+            const [soundOn, setSoundOn] = React.useState(true);
+
+            // เซฟข้อมูลลง LocalStorage
+            React.useEffect(() => {
+                localStorage.setItem('genz_planner_state', JSON.stringify(state));
+            }, [state]);
+
+            // อัปเดตตัวแปร isMuted เมื่อผู้ใช้กดปุ่ม
+            React.useEffect(() => {
+                isMuted = !soundOn;
+            }, [soundOn]);
+
+            // Close sidebar on mobile when tab selected
+            const handleTabSelect = (tabId) => {
+                playDopamineSound('click');
+                setActiveTab(tabId);
+                if (window.innerWidth <= 768) {
+                    setMobileMenuOpen(false);
+                }
+            };
+
+            const resetToDefault = () => {
+                if (confirm("Are you sure you want to reset ALL data to default? This will overwrite your entire progress.")) {
+                    playDopamineSound('cancel');
+                    setState(defaultState);
+                    showToast("All data has been reset to default.");
+                }
+            };
+
+            const exportData = () => {
+                playDopamineSound('success');
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `My_Financial_Reset_Data.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                showToast("📥 Backup file downloaded!");
+            };
+
+            const importData = (event) => {
+                const fileReader = new FileReader();
+                fileReader.onload = e => {
+                    try {
+                        const parsed = JSON.parse(e.target.result);
+                        setState(parsed);
+                        playDopamineSound('success');
+                        showToast("✅ Data imported successfully!");
+                    } catch (err) {
+                        showToast("❌ Invalid JSON file.");
+                    }
+                };
+                fileReader.readAsText(event.target.files[0]);
+            };
+
+            const tabs = [
+                { id: "debt", label: "Debt Reset Toolkit", icon: "💸", color: "bg-[#FBCFE8]" },
+                { id: "budget", label: "Budget Reset Planner", icon: "📊", color: "bg-[#DDF2D1]" },
+                { id: "bills", label: "Bill Payment Calendar", icon: "📅", color: "bg-[#D2E0FB]" },
+                { id: "subs", label: "Subscription Tracker", icon: "🍿", color: "bg-[#FFD1A9]" },
+                { id: "savings", label: "Savings Goal Tracker", icon: "🎯", color: "bg-[#E5D4FF]" },
+                { id: "nospend", label: "No-Spend Challenge", icon: "🚫", color: "bg-[#FBCFE8]" },
+                { id: "sinking", label: "Sinking Funds Tracker", icon: "🏖️", color: "bg-[#DDF2D1]" },
+                { id: "paycheck", label: "Paycheck Budget", icon: "💵", color: "bg-[#D2E0FB]" },
+                { id: "workbook", label: "30-Day Reset", icon: "📓", color: "bg-[#FFD1A9]" }
+            ];
+
+            return (
+                <div class="flex h-screen overflow-hidden">
+                    
+                    {/* Mobile Overlay */}
+                    <div 
+                        class={`sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                    ></div>
+
+                    {/* --- SIDEBAR --- */}
+                    <div class={`h-full border-r-3 border-slate-800 bg-white transition-all duration-300 flex flex-col z-30 
+                        ${window.innerWidth <= 768 
+                            ? (mobileMenuOpen ? 'fixed inset-y-0 left-0 w-72' : 'fixed -translate-x-full w-72') 
+                            : (sidebarOpen ? 'w-80' : 'w-20')
+                        }`}>
+                        {/* Sidebar Header */}
+                        <div class="p-4 border-b-3 border-slate-800 flex items-center justify-between bg-[#FDFBF7]">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">⚡</span>
+                                {(sidebarOpen || mobileMenuOpen) && <h1 class="font-extrabold text-lg text-slate-900 tracking-tight">FINANCIAL RESET</h1>}
+                            </div>
+                            <button 
+                                onClick={() => { 
+                                    playDopamineSound('click'); 
+                                    if (window.innerWidth <= 768) setMobileMenuOpen(false);
+                                    else setSidebarOpen(!sidebarOpen); 
+                                }} 
+                                class="p-2 brutal-btn rounded bg-[#FAF6F0] hover:bg-slate-100 hidden md:block"
+                            >
+                                <span>{sidebarOpen ? "◀" : "▶"}</span>
+                            </button>
+                        </div>
+
+                        {/* Navigation List */}
+                        <div class="flex-1 overflow-y-auto p-4 space-y-2">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => handleTabSelect(tab.id)}
+                                    class={`w-full flex items-center gap-3 p-3 rounded-xl border-2 border-slate-800 text-left font-bold transition-all ${
+                                        activeTab === tab.id 
+                                            ? `${tab.color} translate-x-1 shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]` 
+                                            : 'bg-white hover:bg-slate-50 shadow-[4px_4px_0px_0px_rgba(30,41,59,1)]'
+                                    }`}
+                                >
+                                    <span class="text-xl">{tab.icon}</span>
+                                    {(sidebarOpen || mobileMenuOpen) && <span class="text-sm truncate">{tab.label}</span>}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Sidebar Footer Controls */}
+                        {(sidebarOpen || mobileMenuOpen) && (
+                            <div class="p-4 border-t-3 border-slate-800 bg-[#FAF6F0] space-y-2">
+                                <div class="flex gap-2">
+                                    <button onClick={exportData} class="flex-1 text-xs py-2 px-3 bg-[#E5D4FF] rounded-lg border-2 border-slate-800 font-bold brutal-btn text-center">
+                                        📥 Backup
+                                    </button>
+                                    <label class="flex-1 text-xs py-2 px-3 bg-[#DDF2D1] rounded-lg border-2 border-slate-800 font-bold brutal-btn text-center cursor-pointer">
+                                        📤 Load
+                                        <input type="file" accept=".json" onChange={importData} class="hidden" />
+                                    </label>
+                                </div>
+                                {/* Pุ่มควบคุมเสียงที่เพิ่มใหม่ตรงนี้ */}
+                                <button onClick={() => { playDopamineSound('click'); setSoundOn(!soundOn); }} class="w-full text-xs py-2 bg-white rounded-lg border-2 border-slate-800 font-bold hover:bg-slate-50 transition-colors">
+                                    {soundOn ? "🔊 Sounds Active" : "🔇 Sounds Muted"}
+                                </button>
+                                <button onClick={resetToDefault} class="w-full text-xs py-2 text-rose-600 bg-white rounded-lg border-2 border-rose-600 font-bold hover:bg-rose-50 transition-colors">
+                                    ⚠️ Wipe & Reset App
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* --- MAIN WORKSPACE CONTENT --- */}
+                    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#FAF6F0]">
+                        
+                        {/* Top Utility Bar (Always visible on mobile) */}
+                        <header class="p-3 md:p-4 border-b-3 border-slate-800 bg-white flex items-center justify-between md:hidden">
+                            <div class="flex items-center gap-2">
+                                <button 
+                                    onClick={() => setMobileMenuOpen(true)}
+                                    class="p-2 brutal-btn bg-[#FAF6F0] rounded border-2 border-slate-800 font-bold"
+                                >
+                                    🍔 Menu
+                                </button>
+                                <span class="font-extrabold text-sm tracking-tight text-slate-900">FINANCIAL RESET</span>
+                            </div>
+                            <span class="text-xs bg-[#E5D4FF] py-1 px-3 border-2 border-slate-800 rounded-full font-bold">Gen Z Edition</span>
+                        </header>
+
+                        {/* Dynamically Render Tool View */}
+                        <main class="flex-1 overflow-y-auto p-3 md:p-8 space-y-6">
+                            {activeTab === "debt" && <DebtResetView state={state} setState={setState} />}
+                            {activeTab === "budget" && <BudgetResetView state={state} setState={setState} />}
+                            {activeTab === "bills" && <BillCalendarView state={state} setState={setState} />}
+                            {activeTab === "subs" && <SubscriptionView state={state} setState={setState} />}
+                            {activeTab === "savings" && <SavingsTrackerView state={state} setState={setState} />}
+                            {activeTab === "nospend" && <NoSpendView state={state} setState={setState} />}
+                            {activeTab === "sinking" && <SinkingFundsView state={state} setState={setState} />}
+                            {activeTab === "paycheck" && <PaycheckBudgetView state={state} setState={setState} />}
+                            {activeTab === "workbook" && <WorkbookView state={state} setState={setState} />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 1. DEBT AND LIFE RESET TOOLKIT VIEW
+        // ==========================================
+        function DebtResetView({ state, setState }) {
+            const [strategy, setStrategy] = React.useState("snowball");
+            const [newDebt, setNewDebt] = React.useState({ name: "", balance: "", rate: "", minPay: "" });
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newDebt.name || !newDebt.balance || !newDebt.rate || !newDebt.minPay) return;
+                playDopamineSound('success');
+                setState({
+                    ...state,
+                    debts: [...state.debts, {
+                        id: Date.now().toString(),
+                        name: newDebt.name,
+                        balance: parseFloat(newDebt.balance),
+                        rate: parseFloat(newDebt.rate),
+                        minPay: parseFloat(newDebt.minPay)
+                    }]
+                });
+                setNewDebt({ name: "", balance: "", rate: "", minPay: "" });
+            };
+
+            const handleDelete = (id) => {
+                playDopamineSound('cancel');
+                setState({ ...state, debts: state.debts.filter(d => d.id !== id) });
+            };
+
+            const resetSection = () => {
+                setState({ ...state, debts: [] });
+            };
+
+            const sortedDebts = [...state.debts].sort((a, b) => {
+                if (strategy === "snowball") return a.balance - b.balance;
+                else return b.rate - a.rate;
+            });
+
+            const totalDebt = state.debts.reduce((sum, d) => sum + d.balance, 0);
+            const totalMinPay = state.debts.reduce((sum, d) => sum + d.minPay, 0);
+
+            return (
+                <div id="section-debt" class="space-y-6">
+                    {/* Header with Reset & Share */}
+                    <div class="brutal-card p-4 md:p-6 bg-[#FBCFE8] rounded-3xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">💸 Debt & Life Reset Toolkit</h2>
+                                <p class="text-sm mt-1 font-semibold opacity-90">Destroy your debt. No judgment, just a roadmap to reclaim your life.</p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <ShareBtn sectionId="section-debt" filename="my_debt_reset.png" />
+                                <SectionResetBtn onReset={resetSection} label="Debts" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Overview & Strategy Selector */}
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl flex flex-col justify-center">
+                            <span class="text-xs font-bold uppercase text-slate-500">Total Damage Owed</span>
+                            <span class="text-2xl md:text-3xl font-black mt-1 text-slate-900">${totalDebt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </div>
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl flex flex-col justify-center bg-white">
+                            <span class="text-xs font-bold uppercase text-slate-500">Total Monthly Minimums</span>
+                            <span class="text-2xl md:text-3xl font-black mt-1 text-slate-900">${totalMinPay.toLocaleString()}</span>
+                        </div>
+                        <div class="brutal-card p-4 rounded-2xl bg-[#E5D4FF] flex flex-col justify-between">
+                            <span class="text-xs font-bold uppercase text-slate-800">Choose Payoff Strategy</span>
+                            <div class="grid grid-cols-2 gap-2 mt-2">
+                                <button 
+                                    onClick={() => { playDopamineSound('click'); setStrategy("snowball"); }}
+                                    class={`p-2 text-xs font-bold rounded-lg border-2 border-slate-800 brutal-btn ${strategy === 'snowball' ? 'bg-[#C084FC] font-black' : 'bg-white'}`}
+                                >
+                                    ❄️ Snowball
+                                </button>
+                                <button 
+                                    onClick={() => { playDopamineSound('click'); setStrategy("avalanche"); }}
+                                    class={`p-2 text-xs font-bold rounded-lg border-2 border-slate-800 brutal-btn ${strategy === 'avalanche' ? 'bg-[#C084FC] font-black' : 'bg-white'}`}
+                                >
+                                    ⚡ Avalanche
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content Section */}
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                        {/* Add Debt Card */}
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <h3 class="font-extrabold text-lg">➕ Log a New Debt</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-bold block mb-1">Debt Name</label>
+                                    <input type="text" placeholder="e.g. Credit Card A" value={newDebt.name} onChange={e => setNewDebt({...newDebt, name: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" />
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-xs font-bold block mb-1">Balance ($)</label>
+                                        <input type="number" placeholder="500" value={newDebt.balance} onChange={e => setNewDebt({...newDebt, balance: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" />
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-bold block mb-1">APR (%)</label>
+                                        <input type="number" placeholder="19.99" value={newDebt.rate} onChange={e => setNewDebt({...newDebt, rate: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold block mb-1">Min Payment ($)</label>
+                                    <input type="number" placeholder="25" value={newDebt.minPay} onChange={e => setNewDebt({...newDebt, minPay: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" />
+                                </div>
+                                <button type="submit" class="w-full p-3 bg-[#FBCFE8] border-2 border-slate-800 rounded-xl font-bold brutal-btn text-sm">
+                                    Track This Debt 👊
+                                </button>
+                            </form>
+                        </div>
+
+                        {/* Payoff List */}
+                        <div class="lg:col-span-2 brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+                                <h3 class="font-extrabold text-lg">🚀 Payoff Priority List</h3>
+                                <span class="text-xs font-semibold px-3 py-1 bg-slate-100 border border-slate-800 rounded-full">
+                                    {strategy === 'snowball' ? 'Lowest Balance First' : 'Highest APR First'}
+                                </span>
+                            </div>
+
+                            {sortedDebts.length === 0 ? (
+                                <div class="p-8 text-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl">
+                                    <p class="font-bold text-slate-500">No debts recorded. You're completely free! 🎉</p>
+                                </div>
+                            ) : (
+                                <div class="space-y-3">
+                                    {sortedDebts.map((debt, index) => (
+                                        <div key={debt.id} class="flex items-center justify-between p-3 md:p-4 border-2 border-slate-800 rounded-xl bg-[#FAF6F0] relative overflow-hidden shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]">
+                                            <div class="absolute top-0 left-0 bg-slate-900 text-white text-[10px] font-black px-3 py-0.5 rounded-br-lg">
+                                                #{index + 1}
+                                            </div>
+                                            <div class="pt-3">
+                                                <h4 class="font-extrabold text-sm md:text-base">{debt.name}</h4>
+                                                <div class="flex gap-3 mt-1 text-xs font-semibold text-slate-500">
+                                                    <span>APR: {debt.rate}%</span>
+                                                    <span>Min: ${debt.minPay}/mo</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-base md:text-lg font-black text-slate-900">${debt.balance.toLocaleString()}</span>
+                                                <button onClick={() => handleDelete(debt.id)} class="p-2 text-rose-600 hover:bg-rose-50 rounded-lg">🗑️</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 2. BUDGET RESET PLANNER VIEW
+        // ==========================================
+        function BudgetResetView({ state, setState }) {
+            const { income, needsPercent, wantsPercent, savingsPercent } = state.budget;
+
+            const updatePercent = (key, value) => {
+                const val = parseInt(value) || 0;
+                let newStateBudget = { ...state.budget, [key]: val };
+                if (key === "needsPercent") {
+                    const remaining = 100 - val;
+                    newStateBudget.wantsPercent = Math.round(remaining * 0.6);
+                    newStateBudget.savingsPercent = Math.round(remaining * 0.4);
+                } else if (key === "wantsPercent") {
+                    const remaining = 100 - state.budget.needsPercent - val;
+                    newStateBudget.savingsPercent = remaining >= 0 ? remaining : 0;
+                }
+                setState({ ...state, budget: newStateBudget });
+            };
+
+            const resetSection = () => {
+                setState({ ...state, budget: defaultState.budget });
+            };
+
+            const needsAmt = (income * needsPercent) / 100;
+            const wantsAmt = (income * wantsPercent) / 100;
+            const savingsAmt = (income * savingsPercent) / 100;
+
+            return (
+                <div id="section-budget" class="space-y-6">
+                    <div class="brutal-card p-4 md:p-6 bg-[#DDF2D1] rounded-3xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">📊 Budget Reset Planner</h2>
+                                <p class="text-sm mt-1 font-semibold opacity-90">Organize your cash flow so you can live guilt-free while securing your future bag.</p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <ShareBtn sectionId="section-budget" filename="my_budget_reset.png" />
+                                <SectionResetBtn onReset={resetSection} label="Budget" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <h3 class="font-extrabold text-lg">💰 Monthly Income</h3>
+                            <div>
+                                <label class="text-xs font-bold block mb-1">Net Income ($/month)</label>
+                                <input type="number" value={income} onChange={e => setState({ ...state, budget: { ...state.budget, income: parseFloat(e.target.value) || 0 } })} class="w-full p-3 border-2 border-slate-800 rounded-xl text-xl font-bold" />
+                            </div>
+                            <div class="p-4 rounded-xl bg-amber-50 border-2 border-amber-200 text-xs font-semibold leading-relaxed text-amber-800">
+                                💡 <strong>Rule of Thumb:</strong> 50% Needs, 30% Wants (Guilt-Free), 20% Savings.
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-2 brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-6">
+                            <h3 class="font-extrabold text-lg">⚙️ Adjust Your Vibe Allocation</h3>
+                            <div class="space-y-4">
+                                <div class="space-y-1">
+                                    <div class="flex justify-between font-bold text-sm">
+                                        <span>🏡 Essentials ({needsPercent}%)</span>
+                                        <span>${needsAmt.toLocaleString()}</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" value={needsPercent} onChange={e => updatePercent("needsPercent", e.target.value)} class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="flex justify-between font-bold text-sm">
+                                        <span>💅 Guilt-Free Wants ({wantsPercent}%)</span>
+                                        <span>${wantsAmt.toLocaleString()}</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" value={wantsPercent} disabled={needsPercent >= 100} onChange={e => updatePercent("wantsPercent", e.target.value)} class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-500" />
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="flex justify-between font-bold text-sm">
+                                        <span>📈 Future Self Savings ({savingsPercent}%)</span>
+                                        <span>${savingsAmt.toLocaleString()}</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 rounded-full h-4 overflow-hidden border-2 border-slate-800">
+                                        <div class="bg-purple-400 h-full transition-all duration-300" style={{ width: `${savingsPercent}%` }}></div>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 block font-semibold">(Auto-balances to 100%)</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t-2 border-slate-100">
+                                <h4 class="font-extrabold text-sm mb-3">Budget Blueprint Visualizer</h4>
+                                <div class="flex h-10 rounded-xl border-3 border-slate-800 overflow-hidden text-xs font-black text-slate-900">
+                                    {needsPercent > 0 && <div class="bg-[#DDF2D1] flex items-center justify-center transition-all" style={{ width: `${needsPercent}%` }}>{needsPercent}%</div>}
+                                    {wantsPercent > 0 && <div class="bg-[#FFD1A9] flex items-center justify-center transition-all border-l-2 border-slate-800" style={{ width: `${wantsPercent}%` }}>{wantsPercent}%</div>}
+                                    {savingsPercent > 0 && <div class="bg-[#E5D4FF] flex items-center justify-center transition-all border-l-2 border-slate-800" style={{ width: `${savingsPercent}%` }}>{savingsPercent}%</div>}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 3. BILL PAYMENT CALENDAR VIEW
+        // ==========================================
+        function BillCalendarView({ state, setState }) {
+            const [newBill, setNewBill] = React.useState({ name: "", amount: "", dueDate: "" });
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newBill.name || !newBill.amount || !newBill.dueDate) return;
+                playDopamineSound('success');
+                setState({ ...state, bills: [...state.bills, { id: Date.now().toString(), name: newBill.name, amount: parseFloat(newBill.amount), dueDate: newBill.dueDate, paid: false }] });
+                setNewBill({ name: "", amount: "", dueDate: "" });
+            };
+
+            const togglePaid = (id) => { playDopamineSound('success'); setState({ ...state, bills: state.bills.map(b => b.id === id ? { ...b, paid: !b.paid } : b) }); };
+            const handleDelete = (id) => { playDopamineSound('cancel'); setState({ ...state, bills: state.bills.filter(b => b.id !== id) }); };
+            const resetSection = () => { setState({ ...state, bills: [] }); };
+
+            const sortedBills = [...state.bills].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+            const unpaidTotal = state.bills.filter(b => !b.paid).reduce((sum, b) => sum + b.amount, 0);
+
+            return (
+                <div id="section-bills" class="space-y-6">
+                    <div class="brutal-card p-4 md:p-6 bg-[#D2E0FB] rounded-3xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">📅 Bill Payment Calendar</h2>
+                                <p class="text-sm mt-1 font-semibold opacity-90">Track your dues. Mark off expenses and dodge late fees effortlessly.</p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <ShareBtn sectionId="section-bills" filename="my_bills.png" />
+                                <SectionResetBtn onReset={resetSection} label="Bills" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <h3 class="font-extrabold text-lg">➕ Track a Bill</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div><label class="text-xs font-bold block mb-1">Bill Name</label><input type="text" placeholder="Rent, Wifi..." value={newBill.name} onChange={e => setNewBill({...newBill, name: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="text-xs font-bold block mb-1">Amount ($)</label><input type="number" placeholder="50" value={newBill.amount} onChange={e => setNewBill({...newBill, amount: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                    <div><label class="text-xs font-bold block mb-1">Due Date</label><input type="date" value={newBill.dueDate} onChange={e => setNewBill({...newBill, dueDate: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-xs" /></div>
+                                </div>
+                                <button type="submit" class="w-full p-3 bg-[#D2E0FB] border-2 border-slate-800 rounded-xl font-bold brutal-btn text-sm">Schedule Bill 📝</button>
+                            </form>
+                            {unpaidTotal > 0 && (
+                                <div class="p-4 rounded-xl bg-amber-50 border-2 border-amber-300 text-xs font-bold text-amber-900 flex justify-between items-center">
+                                    <span>Remaining:</span><span class="text-base font-black">${unpaidTotal.toLocaleString()}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div class="lg:col-span-2 brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <h3 class="font-extrabold text-lg">📋 Upcoming Bills</h3>
+                            {sortedBills.length === 0 ? (
+                                <div class="p-8 text-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl"><p class="font-bold text-slate-500">No bills. Clean slate!</p></div>
+                            ) : (
+                                <div class="space-y-3">
+                                    {sortedBills.map(bill => (
+                                        <div key={bill.id} class={`flex items-center justify-between p-3 md:p-4 border-2 border-slate-800 rounded-xl transition-all ${bill.paid ? 'bg-emerald-50 border-emerald-800 opacity-60' : 'bg-white'}`}>
+                                            <div class="flex items-center gap-3">
+                                                <button onClick={() => togglePaid(bill.id)} class={`w-8 h-8 rounded-lg border-2 border-slate-800 flex items-center justify-center font-bold text-sm ${bill.paid ? 'bg-emerald-400' : 'bg-[#FAF6F0]'}`}>{bill.paid ? "✓" : ""}</button>
+                                                <div>
+                                                    <h4 class={`font-extrabold text-sm ${bill.paid ? 'line-through text-slate-500' : 'text-slate-900'}`}>{bill.name}</h4>
+                                                    <span class="text-xs font-semibold text-slate-500">Due: {new Date(bill.dueDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-base font-black">${bill.amount.toLocaleString()}</span>
+                                                <button onClick={() => handleDelete(bill.id)} class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">🗑️</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 4. SUBSCRIPTION TRACKER VIEW
+        // ==========================================
+        function SubscriptionView({ state, setState }) {
+            const [newSub, setNewSub] = React.useState({ name: "", cost: "", cycle: "Monthly", joy: 3 });
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newSub.name || !newSub.cost) return;
+                playDopamineSound('success');
+                setState({ ...state, subscriptions: [...state.subscriptions, { id: Date.now().toString(), name: newSub.name, cost: parseFloat(newSub.cost), cycle: newSub.cycle, joy: newSub.joy }] });
+                setNewSub({ name: "", cost: "", cycle: "Monthly", joy: 3 });
+            };
+
+            const handleDelete = (id) => { playDopamineSound('cancel'); setState({ ...state, subscriptions: state.subscriptions.filter(s => s.id !== id) }); };
+            const resetSection = () => { setState({ ...state, subscriptions: [] }); };
+
+            const monthlyTotal = state.subscriptions.reduce((sum, s) => sum + (s.cycle === "Yearly" ? s.cost / 12 : s.cost), 0);
+            const yearlyTotal = monthlyTotal * 12;
+
+            return (
+                <div id="section-subs" class="space-y-6">
+                    <div class="brutal-card p-4 md:p-6 bg-[#FFD1A9] rounded-3xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">🍿 Subscription Tracker</h2>
+                                <p class="text-sm mt-1 font-semibold opacity-90">Audit your recurring costs. Rate each subscription by joy and cut the dead weight.</p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <ShareBtn sectionId="section-subs" filename="my_subscriptions.png" />
+                                <SectionResetBtn onReset={resetSection} label="Subs" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="brutal-card p-4 rounded-2xl"><span class="text-xs font-bold uppercase text-slate-500">Monthly Burn</span><span class="text-2xl font-black block mt-1">${monthlyTotal.toFixed(2)}</span></div>
+                        <div class="brutal-card p-4 rounded-2xl"><span class="text-xs font-bold uppercase text-slate-500">Yearly Burn</span><span class="text-2xl font-black block mt-1">${yearlyTotal.toFixed(2)}</span></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <h3 class="font-extrabold text-lg">➕ Add Subscription</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div><label class="text-xs font-bold block mb-1">Service Name</label><input type="text" placeholder="Netflix, Spotify..." value={newSub.name} onChange={e => setNewSub({...newSub, name: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="text-xs font-bold block mb-1">Cost ($)</label><input type="number" placeholder="15" value={newSub.cost} onChange={e => setNewSub({...newSub, cost: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                    <div><label class="text-xs font-bold block mb-1">Cycle</label>
+                                        <select value={newSub.cycle} onChange={e => setNewSub({...newSub, cycle: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm">
+                                            <option>Monthly</option><option>Yearly</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold block mb-1">Joy Rating (1-5): {newSub.joy}</label>
+                                    <input type="range" min="1" max="5" value={newSub.joy} onChange={e => setNewSub({...newSub, joy: parseInt(e.target.value)})} class="w-full" />
+                                </div>
+                                <button type="submit" class="w-full p-3 bg-[#FFD1A9] border-2 border-slate-800 rounded-xl font-bold brutal-btn text-sm">Track Sub 🍿</button>
+                            </form>
+                        </div>
+
+                        <div class="lg:col-span-2 brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <h3 class="font-extrabold text-lg">📋 Active Subscriptions</h3>
+                            {state.subscriptions.length === 0 ? (
+                                <div class="p-8 text-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl"><p class="font-bold text-slate-500">No subscriptions tracked.</p></div>
+                            ) : (
+                                <div class="space-y-3">
+                                    {state.subscriptions.map(sub => (
+                                        <div key={sub.id} class="flex items-center justify-between p-3 md:p-4 border-2 border-slate-800 rounded-xl bg-[#FAF6F0] shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]">
+                                            <div>
+                                                <h4 class="font-extrabold text-sm">{sub.name}</h4>
+                                                <div class="flex gap-2 mt-1 text-xs font-semibold text-slate-500">
+                                                    <span>{sub.cycle}</span>
+                                                    <span>Joy: {"⭐".repeat(sub.joy)}</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-base font-black">${sub.cost.toFixed(2)}</span>
+                                                <button onClick={() => handleDelete(sub.id)} class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">🗑️</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 5. SAVINGS GOAL TRACKER VIEW
+        // ==========================================
+        function SavingsTrackerView({ state, setState }) {
+            const [newGoal, setNewGoal] = React.useState({ name: "", target: "", current: "", color: "#E5D4FF" });
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newGoal.name || !newGoal.target) return;
+                playDopamineSound('success');
+                setState({ ...state, savings: [...state.savings, { id: Date.now().toString(), name: newGoal.name, target: parseFloat(newGoal.target), current: parseFloat(newGoal.current) || 0, color: newGoal.color }] });
+                setNewGoal({ name: "", target: "", current: "", color: "#E5D4FF" });
+            };
+
+            const adjustSavings = (id, amount) => {
+                playDopamineSound('success');
+                setState({ ...state, savings: state.savings.map(s => s.id === id ? { ...s, current: Math.min(s.target, Math.max(0, s.current + amount)) } : s) });
+            };
+
+            const handleDelete = (id) => { playDopamineSound('cancel'); setState({ ...state, savings: state.savings.filter(s => s.id !== id) }); };
+            const resetSection = () => { setState({ ...state, savings: [] }); };
+
+            const colors = ["#E5D4FF", "#DDF2D1", "#D2E0FB", "#FFD1A9", "#FBCFE8"];
+
+            return (
+                <div id="section-savings" class="space-y-6">
+                    <div class="brutal-card p-4 md:p-6 bg-[#E5D4FF] rounded-3xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">🎯 Savings Goal Tracker</h2>
+                                <p class="text-sm mt-1 font-semibold opacity-90">Fund your next adventure. Watch your savings jars fill up over time.</p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <ShareBtn sectionId="section-savings" filename="my_savings.png" />
+                                <SectionResetBtn onReset={resetSection} label="Savings" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <h3 class="font-extrabold text-lg">➕ Open a Savings Jar</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div><label class="text-xs font-bold block mb-1">Goal Name</label><input type="text" placeholder="Coachella, MacBook..." value={newGoal.name} onChange={e => setNewGoal({...newGoal, name: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="text-xs font-bold block mb-1">Target ($)</label><input type="number" placeholder="2000" value={newGoal.target} onChange={e => setNewGoal({...newGoal, target: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                    <div><label class="text-xs font-bold block mb-1">Saved ($)</label><input type="number" placeholder="250" value={newGoal.current} onChange={e => setNewGoal({...newGoal, current: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold block mb-1">Jar Color</label>
+                                    <div class="flex gap-2">
+                                        {colors.map(c => (<button key={c} type="button" onClick={() => { playDopamineSound('click'); setNewGoal({...newGoal, color: c}); }} class="w-8 h-8 rounded-full border-2 border-slate-800" style={{ backgroundColor: c, transform: newGoal.color === c ? 'scale(1.15)' : 'none' }}></button>))}
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full p-3 bg-[#E5D4FF] border-2 border-slate-800 rounded-xl font-bold brutal-btn text-sm">Create Jar 🎨</button>
+                            </form>
+                        </div>
+
+                        <div class="lg:col-span-2 space-y-4">
+                            {state.savings.length === 0 ? (
+                                <div class="brutal-card p-8 text-center bg-white rounded-2xl"><p class="font-bold text-slate-500">No savings goals. Create one!</p></div>
+                            ) : (
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {state.savings.map(goal => {
+                                        const progressPercent = Math.min(100, (goal.current / goal.target) * 100);
+                                        return (
+                                            <div key={goal.id} class="brutal-card p-4 md:p-6 rounded-2xl flex flex-col justify-between" style={{ backgroundColor: goal.color }}>
+                                                <div class="flex justify-between items-start mb-4">
+                                                    <div><h4 class="font-extrabold text-base md:text-lg text-slate-900">{goal.name}</h4><span class="text-xs font-semibold text-slate-500">{progressPercent.toFixed(0)}%</span></div>
+                                                    <button onClick={() => handleDelete(goal.id)} class="text-sm">🗑️</button>
+                                                </div>
+                                                <div class="w-full bg-white h-20 md:h-24 border-3 border-slate-800 rounded-xl overflow-hidden relative flex flex-col justify-end">
+                                                    <div class="bg-[#A855F7] transition-all duration-500" style={{ height: `${progressPercent}%` }}></div>
+                                                    <div class="absolute inset-0 flex items-center justify-center font-black text-lg text-slate-900 drop-shadow-sm">${goal.current.toLocaleString()} / ${goal.target.toLocaleString()}</div>
+                                                </div>
+                                                <div class="grid grid-cols-3 gap-2 mt-4">
+                                                    <button onClick={() => adjustSavings(goal.id, 10)} class="p-2 text-xs font-black bg-white rounded-lg border-2 border-slate-800 brutal-btn">+$10</button>
+                                                    <button onClick={() => adjustSavings(goal.id, 50)} class="p-2 text-xs font-black bg-white rounded-lg border-2 border-slate-800 brutal-btn">+$50</button>
+                                                    <button onClick={() => adjustSavings(goal.id, 100)} class="p-2 text-xs font-black bg-white rounded-lg border-2 border-slate-800 brutal-btn">+$100</button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 6. NO SPEND CHALLENGE TRACKER VIEW
+        // ==========================================
+        function NoSpendView({ state, setState }) {
+            const toggleDay = (dayNum, status) => {
+                playDopamineSound('success');
+                setState({ ...state, noSpend: { ...state.noSpend, days: state.noSpend.days.map(d => d.day === dayNum ? { ...d, status } : d) } });
+            };
+
+            const resetSection = () => {
+                setState({ ...state, noSpend: { ...state.noSpend, days: state.noSpend.days.map(d => ({ ...d, status: "pending" })) } });
+            };
+
+            const successDaysCount = state.noSpend.days.filter(d => d.status === "success").length;
+            const failedDaysCount = state.noSpend.days.filter(d => d.status === "failed").length;
+
+            return (
+                <div id="section-nospend" class="space-y-6">
+                    <div class="brutal-card p-4 md:p-6 bg-[#FBCFE8] rounded-3xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">🚫 No Spend Challenge</h2>
+                                <p class="text-sm mt-1 font-semibold opacity-90">Avoid shopping traps. Record daily habits to claim a high win-streak.</p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <ShareBtn sectionId="section-nospend" filename="my_nospend_challenge.png" />
+                                <SectionResetBtn onReset={resetSection} label="Board" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4 flex flex-col justify-between">
+                            <h3 class="font-extrabold text-lg">📊 Stats</h3>
+                            <div class="space-y-3">
+                                <div class="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-xl flex justify-between items-center">
+                                    <span class="text-sm font-bold text-emerald-800">No Spend (Win)</span>
+                                    <span class="text-2xl font-black text-emerald-950">{successDaysCount} 🟢</span>
+                                </div>
+                                <div class="p-4 bg-rose-50 border-2 border-rose-300 rounded-xl flex justify-between items-center">
+                                    <span class="text-sm font-bold text-rose-800">Spent (Slip)</span>
+                                    <span class="text-2xl font-black text-rose-950">{failedDaysCount} 🔴</span>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-amber-50 border-2 border-amber-300 rounded-xl text-xs font-semibold text-amber-800 leading-relaxed">
+                                🎯 <strong>Rules:</strong> Avoid non-essentials. Rent, groceries, bills don't count. Keep the green streak alive!
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-2 brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+                                <h3 class="font-extrabold text-lg">📅 Challenge Board ({state.noSpend.month})</h3>
+                                <div class="flex gap-2 text-xs font-bold">
+                                    <span>🟢 Saved</span><span>🔴 Spent</span><span>⚪ Pending</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 md:gap-3">
+                                {state.noSpend.days.map(d => {
+                                    let btnColor = "bg-slate-50";
+                                    if (d.status === "success") btnColor = "bg-emerald-400";
+                                    if (d.status === "failed") btnColor = "bg-rose-400";
+                                    return (
+                                        <div key={d.day} class="flex flex-col items-center p-1.5 md:p-2 border-2 border-slate-800 rounded-xl bg-white shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]">
+                                            <span class="text-[10px] md:text-xs font-extrabold mb-1 md:mb-2">Day {d.day}</span>
+                                            <div class="flex gap-1 w-full">
+                                                <button onClick={() => toggleDay(d.day, d.status === 'success' ? 'pending' : 'success')} class={`flex-1 h-6 md:h-8 rounded-lg border border-slate-800 font-bold text-xs ${d.status === 'success' ? 'bg-emerald-500' : 'bg-slate-100'}`}>🟢</button>
+                                                <button onClick={() => toggleDay(d.day, d.status === 'failed' ? 'pending' : 'failed')} class={`flex-1 h-6 md:h-8 rounded-lg border border-slate-800 font-bold text-xs ${d.status === 'failed' ? 'bg-rose-500' : 'bg-slate-100'}`}>🔴</button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 7. SINKING FUNDS TRACKER VIEW
+        // ==========================================
+        function SinkingFundsView({ state, setState }) {
+            const [newFund, setNewFund] = React.useState({ name: "", target: "", current: "", targetMonth: "" });
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newFund.name || !newFund.target || !newFund.targetMonth) return;
+                playDopamineSound('success');
+                setState({ ...state, sinkingFunds: [...state.sinkingFunds, { id: Date.now().toString(), name: newFund.name, target: parseFloat(newFund.target), current: parseFloat(newFund.current) || 0, targetMonth: newFund.targetMonth }] });
+                setNewFund({ name: "", target: "", current: "", targetMonth: "" });
+            };
+
+            const handleDelete = (id) => { playDopamineSound('cancel'); setState({ ...state, sinkingFunds: state.sinkingFunds.filter(f => f.id !== id) }); };
+            const resetSection = () => { setState({ ...state, sinkingFunds: [] }); };
+
+            const calculateMonthlyInst = (fund) => {
+                const now = new Date();
+                const target = new Date(fund.targetMonth + "-01");
+                const monthsLeft = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
+                const remaining = fund.target - fund.current;
+                if (monthsLeft <= 0 || remaining <= 0) return remaining > 0 ? remaining : 0;
+                return Math.ceil(remaining / monthsLeft);
+            };
+
+            return (
+                <div id="section-sinking" class="space-y-6">
+                    <div class="brutal-card p-4 md:p-6 bg-[#DDF2D1] rounded-3xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">🏖️ Sinking Funds Tracker</h2>
+                                <p class="text-sm mt-1 font-semibold opacity-90">Break down future expenses into tiny monthly payments.</p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <ShareBtn sectionId="section-sinking" filename="my_sinking_funds.png" />
+                                <SectionResetBtn onReset={resetSection} label="Funds" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <h3 class="font-extrabold text-lg">➕ Setup Fund</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div><label class="text-xs font-bold block mb-1">Fund Name</label><input type="text" placeholder="Coachella, Christmas..." value={newFund.name} onChange={e => setNewFund({...newFund, name: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="text-xs font-bold block mb-1">Target ($)</label><input type="number" placeholder="1200" value={newFund.target} onChange={e => setNewFund({...newFund, target: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                    <div><label class="text-xs font-bold block mb-1">Saved ($)</label><input type="number" placeholder="100" value={newFund.current} onChange={e => setNewFund({...newFund, current: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-sm" /></div>
+                                </div>
+                                <div><label class="text-xs font-bold block mb-1">Target Month</label><input type="month" value={newFund.targetMonth} onChange={e => setNewFund({...newFund, targetMonth: e.target.value})} class="w-full p-2 border-2 border-slate-800 rounded-lg text-xs" /></div>
+                                <button type="submit" class="w-full p-3 bg-[#DDF2D1] border-2 border-slate-800 rounded-xl font-bold brutal-btn text-sm">Deploy Fund 🏖️</button>
+                            </form>
+                        </div>
+
+                        <div class="lg:col-span-2 brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4">
+                            <h3 class="font-extrabold text-lg">🏖️ Active Funds</h3>
+                            {state.sinkingFunds.length === 0 ? (
+                                <div class="p-8 text-center bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl"><p class="font-bold text-slate-500">No funds. Plan for large events ahead!</p></div>
+                            ) : (
+                                <div class="space-y-4">
+                                    {state.sinkingFunds.map(fund => {
+                                        const monthlyDue = calculateMonthlyInst(fund);
+                                        const progressPercent = Math.min(100, (fund.current / fund.target) * 100);
+                                        return (
+                                            <div key={fund.id} class="p-4 border-2 border-slate-800 rounded-2xl bg-[#FAF6F0] shadow-[2px_2px_0px_0px_rgba(30,41,59,1)] space-y-3">
+                                                <div class="flex justify-between items-start">
+                                                    <div><h4 class="font-extrabold text-base">{fund.name}</h4><span class="text-xs font-semibold text-slate-500">Target: {fund.targetMonth}</span></div>
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="text-right"><span class="text-xs font-bold text-purple-600 block">Monthly:</span><span class="text-sm font-black text-purple-950">${monthlyDue}/mo</span></div>
+                                                        <button onClick={() => handleDelete(fund.id)} class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">🗑️</button>
+                                                    </div>
+                                                </div>
+                                                <div class="w-full bg-white h-5 border-2 border-slate-800 rounded-full overflow-hidden">
+                                                    <div class="bg-emerald-400 h-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
+                                                </div>
+                                                <div class="flex justify-between text-xs font-bold text-slate-600">
+                                                    <span>${fund.current.toLocaleString()} saved</span>
+                                                    <span>${fund.target.toLocaleString()} goal</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 8. PAYCHECK BUDGET PLANNER VIEW
+        // ==========================================
+        function PaycheckBudgetView({ state, setState }) {
+            const { netPay, allocations } = state.paycheck;
+
+            const handleNetPayChange = (val) => {
+                const numVal = parseFloat(val) || 0;
+                const updatedAllocations = allocations.map((al, idx) => {
+                    let share = 0.5;
+                    if (idx === 1) share = 0.2;
+                    if (idx === 2) share = 0.3;
+                    return { ...al, amount: Math.round(numVal * share) };
+                });
+                setState({ ...state, paycheck: { netPay: numVal, allocations: updatedAllocations } });
+            };
+
+            const handleAllocationChange = (id, val) => {
+                setState({ ...state, paycheck: { ...state.paycheck, allocations: allocations.map(al => al.id === id ? { ...al, amount: parseFloat(val) || 0 } : al) } });
+            };
+
+            const resetSection = () => { setState({ ...state, paycheck: defaultState.paycheck }); };
+
+            const totalAllocated = allocations.reduce((sum, al) => sum + al.amount, 0);
+            const remainingToAssign = netPay - totalAllocated;
+
+            return (
+                <div id="section-paycheck" class="space-y-6">
+                    <div class="brutal-card p-4 md:p-6 bg-[#D2E0FB] rounded-3xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">💵 Paycheck Budget Planner</h2>
+                                <p class="text-sm mt-1 font-semibold opacity-90">Zero-Based Budgeting. Distribute each paycheck until zero remains.</p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <ShareBtn sectionId="section-paycheck" filename="my_paycheck_budget.png" />
+                                <SectionResetBtn onReset={resetSection} label="Paycheck" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div class="brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-4 flex flex-col justify-between">
+                            <h3 class="font-extrabold text-lg">💰 Incoming Paycheck</h3>
+                            <div class="space-y-3">
+                                <div><label class="text-xs font-bold block mb-1">Net Income ($)</label><input type="number" value={netPay} onChange={e => handleNetPayChange(e.target.value)} class="w-full p-3 border-2 border-slate-800 rounded-xl text-2xl font-black" /></div>
+                                <div class={`p-4 rounded-xl border-2 text-center transition-all ${remainingToAssign === 0 ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-rose-50 border-rose-300 text-rose-800'}`}>
+                                    <span class="text-xs font-bold uppercase block">Left To Assign:</span>
+                                    <span class="text-3xl font-black">${remainingToAssign.toLocaleString()}</span>
+                                    {remainingToAssign === 0 && <span class="text-xs font-semibold block mt-1">Perfect Zero-Based Vibe! 🎉</span>}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-2 brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-6">
+                            <h3 class="font-extrabold text-lg">🎯 Cash Buckets</h3>
+                            <div class="space-y-4">
+                                {allocations.map(al => (
+                                    <div key={al.id} class="flex items-center justify-between gap-4 p-3 md:p-4 border-2 border-slate-800 rounded-xl bg-[#FAF6F0]">
+                                        <h4 class="font-extrabold text-sm md:text-base flex-1">{al.label}</h4>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold">$</span>
+                                            <input type="number" value={al.amount} onChange={e => handleAllocationChange(al.id, e.target.value)} class="w-20 md:w-24 p-2 border-2 border-slate-800 rounded-lg text-right font-black" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 9. 30-DAY FINANCIAL RESET WORKBOOK VIEW
+        // ==========================================
+        function WorkbookView({ state, setState }) {
+            const toggleTask = (day) => {
+                playDopamineSound('success');
+                setState({ ...state, workbook: state.workbook.map(t => t.day === day ? { ...t, completed: !t.completed } : t) });
+            };
+
+            const resetSection = () => {
+                setState({ ...state, workbook: state.workbook.map(t => ({ ...t, completed: false })) });
+            };
+
+            const completedTasks = state.workbook.filter(t => t.completed).length;
+            const progressPercent = Math.round((completedTasks / state.workbook.length) * 100);
+
+            return (
+                <div id="section-workbook" class="space-y-6">
+                    <div class="brutal-card p-4 md:p-6 bg-[#FFD1A9] rounded-3xl">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight">📓 30-Day Financial Reset</h2>
+                                <p class="text-sm mt-1 font-semibold opacity-90">Small daily challenges that reset bad spending habits forever.</p>
+                            </div>
+                            <div class="flex gap-2 flex-shrink-0">
+                                <ShareBtn sectionId="section-workbook" filename="my_30day_reset.png" />
+                                <SectionResetBtn onReset={resetSection} label="Progress" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="brutal-card p-4 md:p-6 rounded-2xl bg-white space-y-3">
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+                            <h3 class="font-extrabold text-lg">📈 Progress</h3>
+                            <span class="text-sm font-black text-indigo-600">{progressPercent}% ({completedTasks}/{state.workbook.length})</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-6 border-3 border-slate-800 rounded-full overflow-hidden">
+                            <div class="bg-indigo-500 h-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        {state.workbook.map(task => (
+                            <div key={task.day} onClick={() => toggleTask(task.day)} class={`brutal-card p-4 md:p-5 rounded-2xl border-2 border-slate-800 flex items-start gap-3 md:gap-4 cursor-pointer transition-all ${task.completed ? 'bg-slate-100 opacity-60 border-slate-400' : 'bg-white'}`}>
+                                <button class={`w-7 h-7 md:w-8 md:h-8 rounded-xl border-3 border-slate-800 flex items-center justify-center font-black flex-shrink-0 ${task.completed ? 'bg-indigo-400' : 'bg-[#FAF6F0]'}`}>{task.completed ? "✓" : ""}</button>
+                                <div class="space-y-1 min-w-0">
+                                    <h4 class={`text-base md:text-lg font-black ${task.completed ? 'line-through text-slate-500' : 'text-slate-900'}`}>Day {task.day}: {task.title}</h4>
+                                    <p class={`text-xs md:text-sm ${task.completed ? 'line-through text-slate-400' : 'text-slate-600'}`}>{task.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // Render React DOM
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

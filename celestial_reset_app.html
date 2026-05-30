@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Celestial Reset - Interactive Manifestation Journal</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel for JSX Compilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- html2canvas for Exporting Shareable Boards -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FAF5FF; /* Soft Lavender Cream background */
+        }
+        
+        .cosmic-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* Neo-Celestial Custom Shadows and Borders */
+        .celestial-card {
+            background-color: #FFFFFF;
+            border: 3px solid #4C1D95; /* Deep Purple Border */
+            box-shadow: 4px 4px 0px 0px #4C1D95;
+            transition: all 0.2s ease;
+        }
+        .celestial-card:hover {
+            transform: translate(-1px, -1px);
+            box-shadow: 5px 5px 0px 0px #4C1D95;
+        }
+
+        .celestial-btn {
+            border: 2px solid #4C1D95;
+            box-shadow: 3px 3px 0px 0px #4C1D95;
+            transition: all 0.1s ease;
+        }
+        .celestial-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: 2px 2px 0px 0px #4C1D95;
+        }
+
+        /* 3D Tarot Card Flip Animation classes */
+        .tarot-scene {
+            perspective: 1000px;
+        }
+        .tarot-card-container {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+        .tarot-card-container.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .tarot-card-front, .tarot-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 1.5rem;
+            border: 3px solid #4C1D95;
+        }
+        .tarot-card-front {
+            background-color: #4C1D95;
+            background-image: radial-gradient(#F59E0B 1px, transparent 0);
+            background-size: 16px 16px;
+        }
+        .tarot-card-back {
+            background-color: #FFFFFF;
+            transform: rotateY(180deg);
+        }
+
+        /* Custom Scrollbar for cosmic vibe */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF5FF;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C084FC;
+            border-radius: 4px;
+        }
+
+        /* Breathing Animation Classes */
+        @keyframes smooth-breath {
+            0% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.8); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 0.4; }
+        }
+        .animate-breathe {
+            animation: smooth-breath 6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        let audioCtx = null;
+        let sfxMuted = false;
+
+        const initAudioContext = () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        };
+
+        // Synthesize dynamic 8-bit crystal chimes
+        const playCrystalChime = () => {
+            if (sfxMuted) return;
+            try {
+                initAudioContext();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now); // Sweet high A note
+                osc.frequency.exponentialRampToValueAtTime(1760, now + 0.1);
+                
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } catch (e) {}
+        };
+
+        // Synthesize a sweep for Tarot Card flips
+        const playCardFlipSound = () => {
+            if (sfxMuted) return;
+            try {
+                initAudioContext();
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const filter = audioCtx.createBiquadFilter();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(250, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+                
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(500, now);
+                filter.frequency.linearRampToValueAtTime(100, now + 0.25);
+
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } catch (e) {}
+        };
+
+        // Synthesize multi-note star dust twinkles
+        const playSparkleSound = () => {
+            if (sfxMuted) return;
+            try {
+                initAudioContext();
+                const now = audioCtx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // Positive arpeggio
+                
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+                    
+                    gain.gain.setValueAtTime(0.04, now + idx * 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.4);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.start(now + idx * 0.05);
+                    osc.stop(now + idx * 0.05 + 0.5);
+                });
+            } catch (e) {}
+        };
+
+        const tarotCards = [
+            { id: "star", name: "The Star", meaning: "Hope, Inspiration, Spiritual Alignment", description: "You are being guided towards a path of healing. Trust that the universe is aligning in your favor.", keywords: "Hope, Serenity, Renewed Faith" },
+            { id: "empress", name: "The Empress", meaning: "Abundance, Creation, Ultimate Comfort", description: "This is a sign of fertility, creativity, and ultimate wealth. Nurture your dreams and watch them grow.", keywords: "Abundance, Mother Nature, Creativity" },
+            { id: "sun", name: "The Sun", meaning: "Pure Positivity, Radiance, Unlocks Success", description: "Success, vital energy, and happiness are rushing your way. Radiate confidence and step into your magic.", keywords: "Joy, Success, Warm Light" },
+            { id: "fool", name: "The Fool", meaning: "Fresh Clean Slate, Adventure, Leap of Faith", description: "Prepare for a beautiful new journey. Have faith in the unknown and trust where your heart is leading you.", keywords: "Beginnings, Spontaneity, Pure Faith" },
+            { id: "fortune", name: "Wheel of Fortune", meaning: "Good Fortune, Synchronicities, Lucky Breaks", description: "A change of luck is coming! Pay close attention to repeating numbers and signs around you.", keywords: "Destiny, Sudden Luck, Synchronicities" },
+            { id: "strength", name: "Strength", meaning: "Inner Fortitude, Grace, Gentle Boundaries", description: "True power is calm. Master your anxieties with self-love and gentle persistence. You are stronger than you think.", keywords: "Courage, Compassion, Inner Harmony" }
+        ];
+
+        const initialVisionItems = [
+            { id: "1", text: "🏡 Buy an aesthetic design cabin in the woods", type: "text", x: 40, y: 50, color: "bg-[#FFF1F2]" },
+            { id: "2", text: "✈️ Travel around Japan in spring", type: "text", x: 350, y: 120, color: "bg-[#ECFDF5]" },
+            { id: "3", text: "💰 Reach $10,000 in cozy savings jar", type: "target", x: 200, y: 280, color: "bg-[#FAF5FF]" }
+        ];
+
+        const initialMoonPhase = {
+            newMoonIntentions: ["Build financial security in my terms", "Stay consistent with drinking water daily"],
+            fullMoonReleases: ["Letting go of self-sabotaging doubts", "Release fear of checking my bank account"]
+        };
+
+        const defaultState = {
+            dailyTarot: null,
+            isTarotFlipped: false,
+            visionBoardItems: initialVisionItems,
+            manifestation369: {
+                morning: "I am financially free and in peace",
+                afternoon: "I am financially free and in peace",
+                evening: "I am financially free and in peace"
+            },
+            moonTracker: initialMoonPhase,
+            gratitudeLogs: [
+                { id: "1", note: "Having a cup of warm chamomile tea", date: "May 29, 2026" },
+                { id: "2", note: "Finding this cozy interactive app", date: "May 29, 2026" }
+            ],
+            selfCareChecklist: [
+                { id: "1", label: "Meditate with Solfeggio sound for 1 min", completed: true },
+                { id: "2", label: "Write 3 gratitudes", completed: false },
+                { id: "3", label: "Declutter physical study desk", completed: false }
+            ],
+            sfxMutedState: false
+        };
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('celestial_manifest_state');
+                if (saved) {
+                    try { return JSON.parse(saved); } catch(e) { return defaultState; }
+                }
+                return defaultState;
+            });
+
+            const [activeTab, setActiveTab] = React.useState("guidance");
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
+            // Sync sfx mute toggle with helper
+            React.useEffect(() => {
+                sfxMuted = state.sfxMutedState;
+            }, [state.sfxMutedState]);
+
+            React.useEffect(() => {
+                localStorage.setItem('celestial_manifest_state', JSON.stringify(state));
+            }, [state]);
+
+            const toggleSfxMute = () => {
+                const nextMuted = !state.sfxMutedState;
+                setState(prev => ({ ...prev, sfxMutedState: nextMuted }));
+                if (!nextMuted) playCrystalChime();
+            };
+
+            const handleTabSelect = (tabId) => {
+                playCrystalChime();
+                setActiveTab(tabId);
+                if (window.innerWidth <= 768) {
+                    setMobileMenuOpen(false);
+                }
+            };
+
+            // Global wipe
+            const handleWipeAll = () => {
+                if (confirm("🚨 Clear manifestation logs completely? This reset is final.")) {
+                    setState(defaultState);
+                    playCardFlipSound();
+                }
+            };
+
+            // JSON Backup and Load
+            const downloadBackup = () => {
+                playCrystalChime();
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `My_Celestial_Manifest_Backup.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            };
+
+            const uploadBackup = (e) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        setState(parsed);
+                        playCrystalChime();
+                        alert("Manifestation space restored successfully! ✨");
+                    } catch(err) {
+                        alert("Invalid file format.");
+                    }
+                };
+                if (e.target.files[0]) reader.readAsText(e.target.files[0]);
+            };
+
+            return (
+                <div className="flex h-screen overflow-hidden flex-col md:flex-row relative">
+                    
+                    {/* --- MOBILE NAV OVERLAY --- */}
+                    <div 
+                        className={`fixed inset-0 bg-slate-950/45 z-20 transition-opacity ${mobileMenuOpen ? 'opacity-100 block' : 'opacity-0 hidden'}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                    ></div>
+
+                    {/* --- SIDEBAR --- */}
+                    <div className={`h-full border-r-3 border-[#4C1D95] bg-white transition-all duration-300 flex flex-col z-30
+                        ${window.innerWidth <= 768 
+                            ? (mobileMenuOpen ? 'fixed inset-y-0 left-0 w-72' : 'fixed -translate-x-full w-72') 
+                            : 'w-80'
+                        }`}>
+                        
+                        {/* Brand bar */}
+                        <div className="p-4 border-b-3 border-[#4C1D95] flex items-center justify-between bg-[#FAF5FF]">
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl">🔮</span>
+                                <div>
+                                    <h1 className="font-extrabold text-slate-900 tracking-tight text-xs md:text-sm">CELESTIAL RESET</h1>
+                                    <p className="text-[10px] font-bold text-amber-500">Gen Z Manifestation Journal</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="p-2 border-2 border-[#4C1D95] bg-white rounded-xl font-bold text-xs md:hidden"
+                            >
+                                Close ✕
+                            </button>
+                        </div>
+
+                        {/* Navigation List */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                            {[
+                                { id: "guidance", label: "Celestial Daily Guidance", icon: "✨", color: "bg-[#E5D4FF]" },
+                                { id: "vision", label: "Aesthetic Vision Board", icon: "🖼️", color: "bg-[#FBCFE8]" },
+                                { id: "scripting", label: "369 Scripting Method", icon: "🖋️", color: "bg-[#FFD1A9]" },
+                                { id: "lunar", label: "Lunar Ritual Tracker", icon: "🌙", color: "bg-[#D2E0FB]" },
+                                { id: "gratitude", label: "Gratitude & Self-Love", icon: "💖", color: "bg-[#DDF2D1]" }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => handleTabSelect(tab.id)}
+                                    className={`w-full flex items-center gap-3 p-3.5 rounded-xl border-2 border-[#4C1D95] text-left font-bold transition-all ${
+                                        activeTab === tab.id 
+                                            ? `${tab.color} translate-x-1 shadow-[2px_2px_0px_0px_rgba(76,29,149,1)]` 
+                                            : 'bg-white hover:bg-slate-50 shadow-[4px_4px_0px_0px_rgba(76,29,149,1)]'
+                                    }`}
+                                >
+                                    <span className="text-xl">{tab.icon}</span>
+                                    <span className="text-sm truncate">{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Controls Panel */}
+                        <div className="p-4 border-t-3 border-[#4C1D95] bg-[#FAF5FF] space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                                <button 
+                                    onClick={downloadBackup}
+                                    className="text-xs py-2 px-3 bg-white rounded-lg border-2 border-[#4C1D95] font-bold text-center hover:bg-slate-50"
+                                >
+                                    📥 Backup
+                                </button>
+                                <label className="text-xs py-2 px-3 bg-[#DDF2D1] rounded-lg border-2 border-[#4C1D95] font-bold text-center cursor-pointer hover:opacity-90">
+                                    📤 Load
+                                    <input type="file" accept=".json" onChange={uploadBackup} className="hidden" />
+                                </label>
+                            </div>
+                            
+                            {/* SOUND TOGGLE BUTTON ADDED HERE */}
+                            <button 
+                                onClick={toggleSfxMute}
+                                className={`w-full text-xs py-2 rounded-lg border-2 border-[#4C1D95] font-bold transition-colors ${state.sfxMutedState ? 'bg-rose-100 text-rose-700' : 'bg-white'}`}
+                            >
+                                {state.sfxMutedState ? "🔇 Sounds Muted" : "🔊 Sounds Active"}
+                            </button>
+                            
+                            <button onClick={handleWipeAll} className="w-full text-[11px] py-2 text-rose-600 bg-white rounded-lg border-2 border-rose-600 font-bold hover:bg-rose-50 transition-colors">
+                                🚨 Wipe Manifestations
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* --- MAIN CONTENT WINDOW --- */}
+                    <div className="flex-grow flex flex-col h-full overflow-hidden bg-[#FAF5FF]">
+                        {/* Mobile Header Bar */}
+                        <header className="p-3 bg-white border-b-3 border-[#4C1D95] flex items-center justify-between md:hidden">
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => { playCrystalChime(); setMobileMenuOpen(true); }}
+                                    className="p-2 border-2 border-[#4C1D95] bg-[#FAF5FF] rounded-xl font-bold text-xs"
+                                >
+                                    Menu 🍔
+                                </button>
+                                <span className="font-extrabold text-sm tracking-tight text-slate-900">CELESTIAL RESET</span>
+                            </div>
+                            <span className="text-xs bg-[#E5D4FF] py-1 px-3 border-2 border-[#4C1D95] rounded-full font-bold">Cosmic</span>
+                        </header>
+
+                        {/* Secondary Header Utility bar */}
+                        <header className="hidden md:flex p-4 border-b-3 border-[#4C1D95] bg-white justify-between items-center z-10">
+                            <span className="font-black text-sm text-[#4C1D95] uppercase tracking-wider">Unlocks Cosmic Attract Power</span>
+                        </header>
+
+                        {/* Interactive Main workspace */}
+                        <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                            {activeTab === "guidance" && <GuidanceView state={state} setState={setState} />}
+                            {activeTab === "vision" && <VisionBoardView state={state} setState={setState} />}
+                            {activeTab === "scripting" && <Scripting369View state={state} setState={setState} />}
+                            {activeTab === "lunar" && <LunarRitualView state={state} setState={setState} />}
+                            {activeTab === "gratitude" && <GratitudeView state={state} setState={setState} />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        function GuidanceView({ state, setState }) {
+            const handleTarotPull = () => {
+                if (state.isTarotFlipped) return;
+                
+                playCardFlipSound();
+                const randomCard = tarotCards[Math.floor(Math.random() * tarotCards.length)];
+                
+                setState(prev => ({
+                    ...prev,
+                    dailyTarot: randomCard,
+                    isTarotFlipped: true
+                }));
+
+                setTimeout(() => {
+                    playSparkleSound();
+                }, 750);
+            };
+
+            const resetTarot = () => {
+                playCardFlipSound();
+                setState(prev => ({
+                    ...prev,
+                    dailyTarot: null,
+                    isTarotFlipped: false
+                }));
+            };
+
+            return (
+                <div id="section-guidance" className="space-y-6">
+                    {/* Intro card */}
+                    <div className="celestial-card p-6 bg-[#E5D4FF] rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">🔮 Daily Guidance & Tarot Guidance</h2>
+                            <p className="text-sm mt-1 font-semibold opacity-90">Align with high-vibrational frequencies. Pull your card of the day for spiritual guidance.</p>
+                        </div>
+                        <button 
+                            onClick={() => exportScreenshot("section-guidance", "celestial_daily_tarot")}
+                            className="text-xs font-black py-2 px-4 bg-white border-2 border-[#4C1D95] rounded-full hover:bg-slate-50 flex-shrink-0 self-start md:self-auto"
+                        >
+                            📸 Share Reading Card
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                        {/* 3D Animated Tarot Card scene */}
+                        <div className="flex flex-col items-center justify-center p-6">
+                            <span className="text-xs font-bold uppercase tracking-widest text-[#4C1D95] mb-4">Click below to flip</span>
+                            <div className="tarot-scene w-60 h-96">
+                                <div 
+                                    onClick={handleTarotPull}
+                                    className={`tarot-card-container ${state.isTarotFlipped ? 'is-flipped' : ''}`}
+                                >
+                                    {/* Front (Back of the real card face) */}
+                                    <div className="tarot-card-front flex flex-col items-center justify-center p-4">
+                                        <div className="w-16 h-16 border-2 border-amber-300 rounded-full flex items-center justify-center text-3xl mb-4 shadow-lg animate-bounce">
+                                            🌟
+                                        </div>
+                                        <span className="text-white font-black tracking-widest text-xs">PULL ORACLE</span>
+                                    </div>
+                                    
+                                    {/* Back (The actual oracle result revealed) */}
+                                    <div className="tarot-card-back flex flex-col justify-between p-6 text-center">
+                                        <div className="border-b border-slate-200 pb-3">
+                                            <span className="text-[10px] uppercase font-bold tracking-widest text-amber-500 block">DAILY REVEAL</span>
+                                            <h4 className="font-extrabold text-lg text-slate-800 tracking-tight mt-1">{state.dailyTarot?.name}</h4>
+                                        </div>
+                                        <div className="text-4xl py-2">🧘</div>
+                                        <div className="space-y-1">
+                                            <span className="text-xs font-black text-[#4C1D95] block italic">"{state.dailyTarot?.meaning}"</span>
+                                            <p className="text-[10px] text-slate-500 font-semibold leading-relaxed px-1">
+                                                {state.dailyTarot?.description}
+                                            </p>
+                                        </div>
+                                        <div className="border-t border-slate-200 pt-3">
+                                            <span className="text-[10px] font-black bg-[#FAF5FF] border border-[#D6C4F1] text-[#4C1D95] px-2.5 py-1 rounded-full uppercase">
+                                                {state.dailyTarot?.keywords}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {state.isTarotFlipped && (
+                                <button 
+                                    onClick={resetTarot}
+                                    className="mt-6 text-sm font-extrabold text-[#4C1D95] bg-[#E5D4FF] hover:bg-[#D6C4F1] py-3 px-8 rounded-full border-2 border-[#4C1D95] shadow-[3px_3px_0px_0px_rgba(76,29,149,1)] transition-all flex items-center justify-center gap-2 mx-auto"
+                                >
+                                    <span>🔄</span> Draw Another Card
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Interactive Attract Breath Sphere */}
+                        <BreathingSphere sfxMuted={state.sfxMutedState} />
+                    </div>
+                </div>
+            );
+        }
+
+        function BreathingSphere({ sfxMuted }) {
+            const [isActive, setIsActive] = React.useState(false);
+            const [phase, setPhase] = React.useState('idle'); // idle, inhale, exhale
+            const activeRef = React.useRef(false);
+            const timeoutRef = React.useRef(null);
+
+            const stopBreathing = () => {
+                setIsActive(false);
+                activeRef.current = false;
+                setPhase('idle');
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            };
+
+            const runBreathCycle = () => {
+                if (!activeRef.current) return;
+
+                // Inhale phase (Exactly 3 seconds)
+                setPhase('inhale');
+                
+                timeoutRef.current = setTimeout(() => {
+                    if (!activeRef.current) return;
+                    
+                    // Exhale phase (Exactly 3 seconds)
+                    setPhase('exhale');
+
+                    timeoutRef.current = setTimeout(() => {
+                        if (activeRef.current) {
+                            runBreathCycle(); // Loop back
+                        }
+                    }, 3000);
+                }, 3000);
+            };
+
+            const toggleBreathing = () => {
+                if (isActive) {
+                    stopBreathing();
+                } else {
+                    setIsActive(true);
+                    activeRef.current = true;
+                    runBreathCycle();
+                }
+            };
+
+            React.useEffect(() => {
+                return () => stopBreathing(); // Cleanup on unmount
+            }, []);
+
+            return (
+                <div className="celestial-card p-6 bg-white rounded-3xl space-y-6 text-center flex flex-col items-center justify-center min-h-[400px]">
+                    <div className="space-y-2">
+                        <h3 className="font-extrabold text-lg">Inhale / Exhale Alignment Bubble</h3>
+                        <p className="text-xs text-slate-400 max-w-sm mx-auto">Regulate your nervous system. Match your breath to the rhythm of this expanding bubble to align your subconscious mind.</p>
+                    </div>
+
+                    {/* Perfectly Smooth CSS Breathing Animation */}
+                    <div 
+                        className="relative flex items-center justify-center w-40 h-40 cursor-pointer"
+                        onClick={toggleBreathing}
+                    >
+                        <div className={`absolute inset-0 bg-[#E5D4FF] border-3 border-[#4C1D95] rounded-full opacity-40 origin-center ${isActive ? 'animate-breathe' : ''}`}></div>
+                        <div className={`w-24 h-24 border-2 border-[#4C1D95] rounded-full flex items-center justify-center font-extrabold text-xs text-[#4C1D95] z-10 relative shadow-sm transition-colors ${isActive ? 'bg-[#D6C4F1]' : 'bg-[#FAF5FF]'}`}>
+                            {isActive ? (phase === 'inhale' ? 'INHALE...' : 'EXHALE...') : 'CLICK TO START 🕯️'}
+                        </div>
+                    </div>
+
+                    <span className="text-xs font-black tracking-widest text-slate-400 uppercase">
+                        {isActive ? "Tap bubble to STOP" : "Focus • Deep Breaths"}
+                    </span>
+                </div>
+            );
+        }
+
+        function VisionBoardView({ state, setState }) {
+            const [newItemText, setNewItemText] = React.useState("");
+            const [newItemType, setNewItemType] = React.useState("text");
+            const [activeDragId, setActiveDragId] = React.useState(null);
+            const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
+
+            const boardRef = React.useRef(null);
+
+            const handleAddItem = (e) => {
+                e.preventDefault();
+                if (!newItemText.trim()) return;
+
+                playCrystalChime();
+                const colors = ["bg-[#FFF1F2]", "bg-[#ECFDF5]", "bg-[#FAF5FF]", "bg-[#EFF6FF]", "bg-[#FFFBEB]"];
+                const randColor = colors[Math.floor(Math.random() * colors.length)];
+
+                setState(prev => ({
+                    ...prev,
+                    visionBoardItems: [
+                        ...prev.visionBoardItems,
+                        {
+                            id: Date.now().toString(),
+                            text: newItemText.trim(),
+                            type: newItemType,
+                            x: 50 + Math.random() * 200,
+                            y: 50 + Math.random() * 150,
+                            color: randColor
+                        }
+                    ]
+                }));
+                setNewItemText("");
+            };
+
+            const handleDeleteItem = (id) => {
+                playCardFlipSound();
+                setState(prev => ({
+                    ...prev,
+                    visionBoardItems: prev.visionBoardItems.filter(item => item.id !== id)
+                }));
+            };
+
+            const resetSection = () => {
+                setState(prev => ({
+                    ...prev,
+                    visionBoardItems: []
+                }));
+            };
+
+            // Touch and Mouse Drag handlers
+            const handleStartDrag = (e, item, clientX, clientY) => {
+                e.preventDefault();
+                setActiveDragId(item.id);
+                setDragOffset({
+                    x: clientX - item.x,
+                    y: clientY - item.y
+                });
+            };
+
+            const handleMoveDrag = (clientX, clientY) => {
+                if (!activeDragId || !boardRef.current) return;
+                const rect = boardRef.current.getBoundingClientRect();
+                
+                // Keep coordinates within bounds of container
+                const newX = Math.max(0, Math.min(clientX - dragOffset.x, rect.width - 150));
+                const newY = Math.max(0, Math.min(clientY - dragOffset.y, rect.height - 80));
+
+                setState(prev => ({
+                    ...prev,
+                    visionBoardItems: prev.visionBoardItems.map(item => 
+                        item.id === activeDragId ? { ...item, x: newX, y: newY } : item
+                    )
+                }));
+            };
+
+            const handleStopDrag = () => {
+                if (activeDragId) {
+                    playCrystalChime();
+                    setActiveDragId(null);
+                }
+            };
+
+            return (
+                <div id="section-vision" className="space-y-6">
+                    <div className="celestial-card p-6 bg-[#FBCFE8] rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">🖼️ Aesthetic Cosmic Vision Board</h2>
+                            <p className="text-sm mt-1 font-semibold opacity-90">Design your dream reality. Drag and drop tags freely across the board. Take screen grabs to make your phone wallpaper.</p>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                            <button 
+                                onClick={() => exportScreenshot("section-board-canvas", "celestial_vision_board")}
+                                className="text-xs font-black py-2 px-4 bg-white border-2 border-[#4C1D95] rounded-full hover:bg-slate-50"
+                            >
+                                📸 Export Board Image
+                            </button>
+                            <button 
+                                onClick={resetSection}
+                                className="text-xs font-black py-2 px-4 bg-rose-100 text-rose-700 border-2 border-rose-300 rounded-full hover:bg-rose-200"
+                            >
+                                🔄 Clear Board
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        {/* Left sidebar creator */}
+                        <div className="celestial-card p-6 bg-white rounded-3xl space-y-4 lg:col-span-1 h-fit">
+                            <h3 className="font-extrabold text-md border-b-2 border-slate-100 pb-2">🌟 Summon Sticker</h3>
+                            <form onSubmit={handleAddItem} className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold block mb-1 text-slate-500">Sticker Text / Target</label>
+                                    <input 
+                                        type="text" 
+                                        value={newItemText}
+                                        onChange={e => setNewItemText(e.target.value)}
+                                        placeholder="Buy a dream house, etc..." 
+                                        className="w-full p-2 border-2 border-[#4C1D95] rounded-lg text-xs"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold block mb-1 text-slate-500">Tag Vibe</label>
+                                    <select 
+                                        value={newItemType}
+                                        onChange={e => setNewItemType(e.target.value)}
+                                        className="w-full p-2 border-2 border-[#4C1D95] bg-[#FAF5FF] rounded-lg text-xs font-bold text-[#4C1D95]"
+                                    >
+                                        <option value="text">💫 Affirmation / Goal</option>
+                                        <option value="target">💰 Money Target</option>
+                                    </select>
+                                </div>
+                                <button type="submit" className="w-full py-2 bg-[#FBCFE8] border-2 border-[#4C1D95] font-bold rounded-xl text-xs celestial-btn">
+                                    Place On Board ✨
+                                </button>
+                            </form>
+                            <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                                💡 <strong>Aesthetic Tips:</strong> Tap and drag items around with mouse or swipe touch on mobile devices.
+                            </p>
+                        </div>
+
+                        {/* Interactive Drag & Drop Area */}
+                        <div className="lg:col-span-3">
+                            <div 
+                                id="section-board-canvas"
+                                ref={boardRef}
+                                onMouseMove={(e) => handleMoveDrag(e.clientX, e.clientY)}
+                                onTouchMove={(e) => { if (e.touches[0]) handleMoveDrag(e.touches[0].clientX, e.touches[0].clientY); }}
+                                onMouseUp={handleStopDrag}
+                                onTouchEnd={handleStopDrag}
+                                className="celestial-card bg-white w-full h-[500px] rounded-3xl relative overflow-hidden border-dashed border-4 border-[#C084FC] select-none shadow-inner"
+                            >
+                                {/* Cosmic background stars overlay */}
+                                <div className="absolute inset-0 bg-slate-50/50 pointer-events-none opacity-40">
+                                    <div className="absolute top-10 left-12">⭐</div>
+                                    <div className="absolute top-2/3 left-1/4 text-purple-300">✦</div>
+                                    <div className="absolute top-1/4 right-1/4 text-pink-300">✦</div>
+                                    <div className="absolute bottom-10 right-12">🌙</div>
+                                </div>
+
+                                {state.visionBoardItems.map(item => (
+                                    <div
+                                        key={item.id}
+                                        style={{ left: `${item.x}px`, top: `${item.y}px`, touchAction: 'none' }}
+                                        onMouseDown={(e) => handleStartDrag(e, item, e.clientX, e.clientY)}
+                                        onTouchStart={(e) => { if (e.touches[0]) handleStartDrag(e, item, e.touches[0].clientX, e.touches[0].clientY); }}
+                                        className={`absolute p-4 rounded-2xl border-2 border-[#4C1D95] shadow-[2px_2px_0px_0px_rgba(76,29,149,1)] cursor-move transition-transform ${item.color} select-none w-56 flex flex-col justify-between`}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                                                {item.type === 'target' ? '💎 TARGET' : '🌠 MANIFEST'}
+                                            </span>
+                                            <button 
+                                                onClick={() => handleDeleteItem(item.id)}
+                                                className="text-[11px] text-[#4C1D95] font-extrabold hover:text-rose-600 transition-colors ml-1"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                        <p className="font-extrabold text-xs md:text-sm text-slate-900 mt-2 leading-relaxed">
+                                            {item.text}
+                                        </p>
+                                    </div>
+                                ))}
+
+                                {state.visionBoardItems.length === 0 && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-slate-400 font-bold text-sm italic">
+                                        Your Vision Board is empty. Bring your desires to life by placing stickers from the left side! 💫
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function Scripting369View({ state, setState }) {
+            const handleInputChange = (e, period) => {
+                setState(prev => ({
+                    ...prev,
+                    manifestation369: {
+                        ...prev.manifestation369,
+                        [period]: e.target.value
+                    }
+                }));
+            };
+
+            const checkProgressCompletion = () => {
+                const { morning, afternoon, evening } = state.manifestation369;
+                let count = 0;
+                if (morning.trim()) count++;
+                if (afternoon.trim()) count++;
+                if (evening.trim()) count++;
+
+                if (count === 3) {
+                    playSparkleSound();
+                    alert("✨ Your 3-6-9 Manifestation Script is completely written! Sending high-vibrational frequencies to the universe!");
+                } else {
+                    playCrystalChime();
+                }
+            };
+
+            return (
+                <div id="section-scripting" className="space-y-6">
+                    <div className="celestial-card p-6 bg-[#FFD1A9] rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">🖋️ Nikola Tesla's 3-6-9 Manifestation Scripting</h2>
+                            <p className="text-sm mt-1 font-semibold opacity-90">Type your desires exactly 3 times in the morning, 6 times in the afternoon, and 9 times in the evening to manifest it.</p>
+                        </div>
+                        <button 
+                            onClick={checkProgressCompletion}
+                            className="text-xs font-black py-2 px-4 bg-white border-2 border-[#4C1D95] rounded-full hover:bg-slate-50 flex-shrink-0 self-start md:self-auto"
+                        >
+                            🔮 Activate Intentions
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Morning Section (3 times) */}
+                        <div className="celestial-card p-6 bg-white rounded-3xl space-y-4">
+                            <div className="flex justify-between items-center border-b-2 border-slate-100 pb-2">
+                                <h3 className="font-extrabold text-lg text-amber-600">🌅 Morning (3 Times)</h3>
+                                <span className="text-[10px] font-black uppercase bg-amber-50 border border-amber-300 text-amber-700 px-2 py-0.5 rounded-full">attract</span>
+                            </div>
+                            <textarea 
+                                value={state.manifestation369.morning}
+                                onChange={(e) => handleInputChange(e, "morning")}
+                                placeholder="I am attracting my dream goals effortlessly..."
+                                className="w-full h-32 p-3 border-2 border-[#4C1D95] rounded-xl text-xs font-semibold bg-[#FFFDFB] focus:outline-none"
+                            ></textarea>
+                            <span className="text-[10px] font-semibold text-slate-400 block italic">Write down exactly what you desire as if you already have it.</span>
+                        </div>
+
+                        {/* Afternoon Section (6 times) */}
+                        <div className="celestial-card p-6 bg-white rounded-3xl space-y-4">
+                            <div className="flex justify-between items-center border-b-2 border-slate-100 pb-2">
+                                <h3 className="font-extrabold text-lg text-[#4C1D95]">☀️ Afternoon (6 Times)</h3>
+                                <span className="text-[10px] font-black uppercase bg-[#FAF5FF] border border-[#D6C4F1] text-[#4C1D95] px-2 py-0.5 rounded-full">vibrate</span>
+                            </div>
+                            <textarea 
+                                value={state.manifestation369.afternoon}
+                                onChange={(e) => handleInputChange(e, "afternoon")}
+                                placeholder="I am attracting my dream goals effortlessly..."
+                                className="w-full h-32 p-3 border-2 border-[#4C1D95] rounded-xl text-xs font-semibold bg-[#FAFBFD] focus:outline-none"
+                            ></textarea>
+                            <span className="text-[10px] font-semibold text-slate-400 block italic">Reinforce the affirmation to boost your sub-conscious beliefs.</span>
+                        </div>
+
+                        {/* Evening Section (9 times) */}
+                        <div className="celestial-card p-6 bg-white rounded-3xl space-y-4">
+                            <div className="flex justify-between items-center border-b-2 border-slate-100 pb-2">
+                                <h3 className="font-extrabold text-lg text-indigo-600">🌌 Evening (9 Times)</h3>
+                                <span className="text-[10px] font-black uppercase bg-indigo-50 border border-indigo-300 text-indigo-700 px-2 py-0.5 rounded-full">lock-in</span>
+                            </div>
+                            <textarea 
+                                value={state.manifestation369.evening}
+                                onChange={(e) => handleInputChange(e, "evening")}
+                                placeholder="I am attracting my dream goals effortlessly..."
+                                className="w-full h-32 p-3 border-2 border-[#4C1D95] rounded-xl text-xs font-semibold bg-[#FAF9FF] focus:outline-none"
+                            ></textarea>
+                            <span className="text-[10px] font-semibold text-slate-400 block italic">Solidify your alignment. Go to bed knowing it is already yours.</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function LunarRitualView({ state, setState }) {
+            const [newIntention, setNewIntention] = React.useState("");
+            const [newRelease, setNewRelease] = React.useState("");
+
+            const handleAddIntention = (e) => {
+                e.preventDefault();
+                if (!newIntention.trim()) return;
+
+                playSparkleSound();
+                setState(prev => ({
+                    ...prev,
+                    moonTracker: {
+                        ...prev.moonTracker,
+                        newMoonIntentions: [...prev.moonTracker.newMoonIntentions, newIntention.trim()]
+                    }
+                }));
+                setNewIntention("");
+            };
+
+            const handleAddRelease = (e) => {
+                e.preventDefault();
+                if (!newRelease.trim()) return;
+
+                playCardFlipSound();
+                setState(prev => ({
+                    ...prev,
+                    moonTracker: {
+                        ...prev.moonTracker,
+                        fullMoonReleases: [...prev.moonTracker.fullMoonReleases, newRelease.trim()]
+                    }
+                }));
+                setNewRelease("");
+            };
+
+            const handleDeleteItem = (index, type) => {
+                playCardFlipSound();
+                const updatedList = state.moonTracker[type].filter((_, idx) => idx !== index);
+                setState(prev => ({
+                    ...prev,
+                    moonTracker: {
+                        ...prev.moonTracker,
+                        [type]: updatedList
+                    }
+                }));
+            };
+
+            const resetSection = () => {
+                setState(prev => ({
+                    ...prev,
+                    moonTracker: {
+                        newMoonIntentions: [],
+                        fullMoonReleases: []
+                    }
+                }));
+            };
+
+            return (
+                <div id="section-lunar" className="space-y-6">
+                    <div className="celestial-card p-6 bg-[#D2E0FB] rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">🌙 Lunar Ritual Phase Tracker</h2>
+                            <p className="text-sm mt-1 font-semibold opacity-90">Harness natural cosmic cycles. Build new manifestations during New Moon and release toxic habits during Full Moon.</p>
+                        </div>
+                        <button 
+                            onClick={resetSection}
+                            className="text-xs font-black py-2 px-4 bg-rose-100 text-rose-700 border-2 border-rose-300 rounded-full hover:bg-rose-200"
+                        >
+                            🔄 Reset Rituals
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        
+                        {/* New Moon Intentions (Attract) */}
+                        <div className="celestial-card p-6 bg-white rounded-3xl space-y-4">
+                            <div className="flex justify-between items-center border-b-2 border-slate-100 pb-2">
+                                <h3 className="font-extrabold text-lg text-slate-800 flex items-center gap-2">
+                                    🌑 New Moon Intentions
+                                </h3>
+                                <span className="text-[10px] font-black uppercase bg-[#D2E0FB] border border-[#A2C4EC] text-slate-800 px-2.5 py-1 rounded-full">attract</span>
+                            </div>
+
+                            <form onSubmit={handleAddIntention} className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={newIntention}
+                                    onChange={e => setNewIntention(e.target.value)}
+                                    placeholder="I manifest absolute inner peace and wealth..."
+                                    className="flex-grow p-2.5 border-2 border-[#4C1D95] rounded-xl text-xs focus:outline-none"
+                                />
+                                <button type="submit" className="px-4 py-2.5 bg-[#D2E0FB] border-2 border-[#4C1D95] font-bold rounded-xl text-xs celestial-btn">
+                                    Affirm ✨
+                                </button>
+                            </form>
+
+                            <div className="space-y-2 pt-2">
+                                {state.moonTracker.newMoonIntentions.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center p-3 border-2 border-slate-800 bg-[#FAFBFD] rounded-xl shadow-[2px_2px_0px_0px_rgba(76,29,149,1)]">
+                                        <span className="font-bold text-xs text-slate-800">{item}</span>
+                                        <button onClick={() => handleDeleteItem(idx, "newMoonIntentions")} className="text-slate-400 hover:text-rose-500 text-xs">✕</button>
+                                    </div>
+                                ))}
+
+                                {state.moonTracker.newMoonIntentions.length === 0 && (
+                                    <p className="text-center py-6 text-xs text-slate-400 font-bold italic">No New Moon intentions declared. What do you want to attract?</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Full Moon Intentions (Release) */}
+                        <div className="celestial-card p-6 bg-white rounded-3xl space-y-4">
+                            <div className="flex justify-between items-center border-b-2 border-slate-100 pb-2">
+                                <h3 className="font-extrabold text-lg text-slate-800 flex items-center gap-2">
+                                    🌕 Full Moon Release List
+                                </h3>
+                                <span className="text-[10px] font-black uppercase bg-rose-50 border border-rose-300 text-rose-700 px-2.5 py-1 rounded-full">release</span>
+                            </div>
+
+                            <form onSubmit={handleAddRelease} className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={newRelease}
+                                    onChange={e => setNewRelease(e.target.value)}
+                                    placeholder="Releasing fear of not having enough money..."
+                                    className="flex-grow p-2.5 border-2 border-[#4C1D95] rounded-xl text-xs focus:outline-none"
+                                />
+                                <button type="submit" className="px-4 py-2.5 bg-rose-200 border-2 border-[#4C1D95] font-bold rounded-xl text-xs celestial-btn">
+                                    Release 🍃
+                                </button>
+                            </form>
+
+                            <div className="space-y-2 pt-2">
+                                {state.moonTracker.fullMoonReleases.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center p-3 border-2 border-slate-800 bg-rose-50/30 rounded-xl shadow-[2px_2px_0px_0px_rgba(76,29,149,1)]">
+                                        <span className="font-bold text-xs text-slate-800">{item}</span>
+                                        <button onClick={() => handleDeleteItem(idx, "fullMoonReleases")} className="text-slate-400 hover:text-rose-500 text-xs">✕</button>
+                                    </div>
+                                ))}
+
+                                {state.moonTracker.fullMoonReleases.length === 0 && (
+                                    <p className="text-center py-6 text-xs text-slate-400 font-bold italic">No Full Moon release items declared. What is holding you back?</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function GratitudeView({ state, setState }) {
+            const [newGratitude, setNewGratitude] = React.useState("");
+
+            const handleAddGratitude = (e) => {
+                e.preventDefault();
+                if (!newGratitude.trim()) return;
+
+                playSparkleSound();
+                setState(prev => ({
+                    ...prev,
+                    gratitudeLogs: [
+                        ...prev.gratitudeLogs,
+                        {
+                            id: Date.now().toString(),
+                            note: newGratitude.trim(),
+                            date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                        }
+                    ]
+                }));
+                setNewGratitude("");
+            };
+
+            const handleDeleteGratitude = (id) => {
+                playCardFlipSound();
+                setState(prev => ({
+                    ...prev,
+                    gratitudeLogs: prev.gratitudeLogs.filter(g => g.id !== id)
+                }));
+            };
+
+            const toggleSelfCare = (id) => {
+                playCrystalChime();
+                setState(prev => ({
+                    ...prev,
+                    selfCareChecklist: prev.selfCareChecklist.map(item => 
+                        item.id === id ? { ...item, completed: !item.completed } : item
+                    )
+                }));
+            };
+
+            const resetSection = () => {
+                setState(prev => ({
+                    ...prev,
+                    gratitudeLogs: [],
+                    selfCareChecklist: prev.selfCareChecklist.map(item => ({ ...item, completed: false }))
+                }));
+            };
+
+            return (
+                <div id="section-gratitude" className="space-y-6">
+                    <div className="celestial-card p-6 bg-[#DDF2D1] rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">💖 Gratitude & Self-Love Center</h2>
+                            <p className="text-sm mt-1 font-semibold opacity-90">Count your blessings. Documenting little glimmers of joy creates high vibrational energy.</p>
+                        </div>
+                        <button 
+                            onClick={resetSection}
+                            className="text-xs font-black py-2 px-4 bg-rose-100 text-rose-700 border-2 border-rose-300 rounded-full hover:bg-rose-200"
+                        >
+                            🔄 Reset Gratitudes
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        {/* Gratitude Journal Column */}
+                        <div className="celestial-card p-6 bg-white rounded-3xl space-y-4 lg:col-span-2">
+                            <h3 className="font-extrabold text-lg">✍️ Write a Gratitude Note</h3>
+                            
+                            <form onSubmit={handleAddGratitude} className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={newGratitude}
+                                    onChange={e => setNewGratitude(e.target.value)}
+                                    placeholder="I am grateful for..."
+                                    className="flex-grow p-3 border-2 border-[#4C1D95] rounded-xl text-xs focus:outline-none"
+                                />
+                                <button type="submit" className="px-5 py-3 bg-[#DDF2D1] border-2 border-[#4C1D95] font-bold rounded-xl text-xs celestial-btn">
+                                    Record 💖
+                                </button>
+                            </form>
+
+                            <div className="space-y-2 pt-4">
+                                {state.gratitudeLogs.map(g => (
+                                    <div key={g.id} className="flex justify-between items-center p-3 border-2 border-slate-800 bg-[#FAFDF9] rounded-xl shadow-[2px_2px_0px_0px_rgba(76,29,149,1)]">
+                                        <div className="space-y-1">
+                                            <p className="font-bold text-xs text-slate-800">✨ {g.note}</p>
+                                            <span className="text-[10px] font-semibold text-slate-400 block">{g.date}</span>
+                                        </div>
+                                        <button onClick={() => handleDeleteGratitude(g.id)} className="text-slate-400 hover:text-rose-500 text-xs">✕</button>
+                                    </div>
+                                ))}
+
+                                {state.gratitudeLogs.length === 0 && (
+                                    <p className="text-center py-8 text-xs text-slate-400 font-bold italic">No gratitudes recorded today. Write a small blessing above!</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Self-Love Checklist Column */}
+                        <div className="celestial-card p-6 bg-white rounded-3xl space-y-4 h-fit">
+                            <h3 className="font-extrabold text-lg">🌸 Self-Love Checklist</h3>
+                            <p className="text-xs text-slate-400">Complete tasks to show compassion to your mind and body.</p>
+
+                            <div className="space-y-2.5 pt-2">
+                                {state.selfCareChecklist.map(item => (
+                                    <div 
+                                        key={item.id}
+                                        onClick={() => toggleSelfCare(item.id)}
+                                        className={`flex items-center gap-3 p-3.5 border-2 border-slate-800 rounded-xl cursor-pointer transition-all shadow-[2px_2px_0px_0px_rgba(76,29,149,1)] ${item.completed ? 'bg-emerald-50 border-emerald-800 opacity-60' : 'bg-white'}`}
+                                    >
+                                        <button className={`w-6 h-6 rounded-lg border-2 border-slate-800 flex items-center justify-center font-bold text-xs ${item.completed ? 'bg-emerald-400' : 'bg-[#FAF5FF]'}`}>
+                                            {item.completed ? "✓" : ""}
+                                        </button>
+                                        <span className={`font-bold text-xs ${item.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                                            {item.label}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render React DOM tree
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

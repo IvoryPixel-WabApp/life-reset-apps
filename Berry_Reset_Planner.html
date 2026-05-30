@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berry Reset - Social Battery & Burnout Planner</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FFF1F2; /* Rose-50 Background */
+            color: #4C0519; /* Rose-950 */
+        }
+        
+        .bubbly-font {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* Soft Berry Aesthetics */
+        .berry-card {
+            background-color: #FFFFFF;
+            border: 3px solid #BE123C; /* Rose-600 */
+            box-shadow: 4px 4px 0px 0px #FDA4AF; /* Rose-300 */
+            border-radius: 28px;
+            transition: all 0.2s ease;
+        }
+        .berry-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #FDA4AF;
+        }
+
+        .berry-btn {
+            border: 2px solid #BE123C;
+            box-shadow: 2px 2px 0px 0px #BE123C;
+            transition: all 0.1s ease;
+        }
+        .berry-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px #BE123C;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #FFF1F2; }
+        ::-webkit-scrollbar-thumb { background: #FDA4AF; border-radius: 4px; }
+        
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(76, 5, 25, 0.4); z-index: 40; display: none;
+        }
+        .sidebar-overlay.active { display: block; }
+        
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: #BE123C; color: #FFF1F2;
+            padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 14px; z-index: 9999;
+            animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
+            box-shadow: 4px 4px 0px 0px #FDA4AF;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+
+        /* Flashing effect for doomscroll interrupter */
+        @keyframes flash-warning {
+            0%, 100% { background-color: #FFF1F2; }
+            50% { background-color: #FDA4AF; }
+        }
+        .flash-active { animation: flash-warning 1s infinite; }
+    </style>
+</head>
+<body class="antialiased min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- SOUND ENGINE ---
+        let audioCtx = null;
+        let isMuted = false;
+
+        const initAudio = () => {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        };
+
+        const playSound = (type = 'click') => {
+            if (isMuted) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                
+                if (type === 'click') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.05);
+                } else if (type === 'success') {
+                    const freqs = [523.25, 659.25, 1046.50];
+                    freqs.forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(f, now + i * 0.1);
+                        g.gain.setValueAtTime(0.08, now + i * 0.1);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.4);
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.5);
+                    });
+                } else if (type === 'alarm') { // Wake up from Doomscrolling
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(880, now + 0.1);
+                    osc.frequency.setValueAtTime(440, now + 0.2);
+                    osc.frequency.setValueAtTime(880, now + 0.3);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.001, now + 0.5);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.5);
+                }
+            } catch(e) {}
+        };
+
+        const showToast = (message) => {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        const copyToClipboard = (text) => {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                playSound('success');
+                showToast("Copied to clipboard! 🍓");
+            } catch (err) {
+                showToast("Failed to copy.");
+            }
+            document.body.removeChild(textarea);
+        };
+
+        // --- DEFAULT STATE ---
+        const defaultState = {
+            socialBattery: 80,
+            textInbox: [
+                { id: "1", name: "Mom", reason: "Asked about weekend plans", replied: false },
+                { id: "2", name: "Sarah", reason: "Sent a TikTok, needs a 'haha' reaction", replied: false }
+            ],
+            burnoutLogs: []
+        };
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('berry_burnout_state');
+                return saved ? JSON.parse(saved) : defaultState;
+            });
+            const [activeTab, setActiveTab] = React.useState("battery");
+            const [sidebarOpen, setSidebarOpen] = React.useState(window.innerWidth > 768);
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+            const [soundOn, setSoundOn] = React.useState(true);
+
+            React.useEffect(() => {
+                localStorage.setItem('berry_burnout_state', JSON.stringify(state));
+                isMuted = !soundOn;
+            }, [state, soundOn]);
+
+            const tabs = [
+                { id: "battery", label: "Social Battery Tracker", icon: "🔋", color: "bg-[#FFE4E6]" },
+                { id: "inbox", label: "The 'Reply Later' Inbox", icon: "💬", color: "bg-[#FCE7F3]" },
+                { id: "doomscroll", label: "Doomscroll Interrupter", icon: "📱", color: "bg-[#FEF08A]" },
+                { id: "firstaid", label: "Burnout First-Aid Kit", icon: "🩹", color: "bg-[#E0E7FF]" }
+            ];
+
+            return (
+                <div class="flex h-screen overflow-hidden relative">
+                    <div class={`sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
+
+                    {/* SIDEBAR */}
+                    <div class={`h-full border-r-3 border-[#BE123C] bg-white transition-all duration-300 flex flex-col z-50 
+                        ${window.innerWidth <= 768 ? (mobileMenuOpen ? 'fixed inset-y-0 left-0 w-72' : 'fixed -translate-x-full w-72') : (sidebarOpen ? 'w-80' : 'w-20')}`}>
+                        
+                        <div class="p-5 border-b-3 border-[#BE123C] flex items-center justify-between bg-[#FFF1F2]">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl">🍓</span>
+                                {(sidebarOpen || mobileMenuOpen) && (
+                                    <div>
+                                        <h1 class="bubbly-font font-black text-xl text-[#BE123C] tracking-tight">BERRY RESET</h1>
+                                        <p class="text-[10px] font-bold text-[#E11D48] uppercase tracking-widest">Burnout Recovery</p>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={() => { playSound(); if(window.innerWidth > 768) setSidebarOpen(!sidebarOpen); else setMobileMenuOpen(false); }} class="p-1.5 berry-btn bg-white rounded-lg hidden md:block">
+                                {sidebarOpen ? "◀" : "▶"}
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => { playSound(); setActiveTab(tab.id); setMobileMenuOpen(false); }}
+                                    class={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[#BE123C] text-left font-bold transition-all ${
+                                        activeTab === tab.id ? `${tab.color} translate-x-1 shadow-[3px_3px_0px_0px_#BE123C]` : 'bg-white hover:bg-[#FFF1F2]'
+                                    }`}
+                                >
+                                    <span class="text-2xl">{tab.icon}</span>
+                                    {(sidebarOpen || mobileMenuOpen) && <span class="text-sm">{tab.label}</span>}
+                                </button>
+                            ))}
+                        </div>
+
+                        {(sidebarOpen || mobileMenuOpen) && (
+                            <div class="p-4 border-t-3 border-[#BE123C] bg-[#FFF1F2] space-y-2">
+                                <button onClick={() => { playSound(); setSoundOn(!soundOn); }} class="w-full text-xs py-3 bg-white rounded-xl border-2 border-[#BE123C] font-bold">
+                                    {soundOn ? "🔊 Sounds Active" : "🔇 Sounds Muted"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MAIN CONTENT */}
+                    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#FFF1F2]">
+                        <header class="p-4 border-b-3 border-[#BE123C] bg-white flex items-center justify-between md:hidden">
+                            <button onClick={() => {playSound(); setMobileMenuOpen(true);}} class="p-2 berry-btn bg-[#FFF1F2] rounded-xl border-2 border-[#BE123C] font-bold">
+                                🍔 Menu
+                            </button>
+                            <span class="bubbly-font font-black text-lg text-[#BE123C]">BERRY RESET</span>
+                        </header>
+
+                        <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6" id="berry-main-container">
+                            {activeTab === "battery" && <BatteryView state={state} setState={setState} />}
+                            {activeTab === "inbox" && <InboxView state={state} setState={setState} />}
+                            {activeTab === "doomscroll" && <DoomscrollView />}
+                            {activeTab === "firstaid" && <FirstAidView />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 1. SOCIAL BATTERY VIEW
+        // ==========================================
+        function BatteryView({ state, setState }) {
+            const battery = state.socialBattery;
+
+            const handleBatteryChange = (e) => {
+                playSound('click');
+                setState({ ...state, socialBattery: parseInt(e.target.value) });
+            };
+
+            const getBatteryStatus = () => {
+                if (battery > 70) return { emoji: "🔋", color: "bg-emerald-400", text: "Fully Charged. Ready to hang out!" };
+                if (battery > 30) return { emoji: "🪫", color: "bg-amber-400", text: "Running low. Introvert mode soon." };
+                return { emoji: "🔌", color: "bg-rose-500", text: "Battery Depleted. Do not disturb." };
+            };
+
+            const status = getBatteryStatus();
+
+            const boundaries = [
+                "Hey! I'm completely out of social battery today, but I see your message and I'll reply properly tomorrow. 🍓",
+                "Love you, but my brain is currently offline. Talk soon! 💤",
+                "I'm having a low-energy day today. Let's catch up when I'm recharged! ✨"
+            ];
+
+            return (
+                <div class="space-y-6 max-w-4xl mx-auto">
+                    <div class="berry-card p-6 md:p-8 bg-[#FFE4E6] flex justify-between items-start">
+                        <div>
+                            <h2 class="bubbly-font text-3xl md:text-4xl font-black text-[#BE123C]">Social Battery Tracker 🔋</h2>
+                            <p class="font-semibold text-[#881337] mt-2">Check in with yourself. It is 100% okay to set boundaries and protect your peace.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Battery Level Adjuster */}
+                        <div class="berry-card p-6 bg-white space-y-6 flex flex-col justify-center items-center text-center">
+                            <h3 class="bubbly-font font-black text-xl">Current Energy Level</h3>
+                            
+                            <div class="text-8xl my-4">{status.emoji}</div>
+                            <div class="w-full bg-slate-100 h-8 rounded-full border-3 border-[#BE123C] overflow-hidden relative">
+                                <div class={`${status.color} h-full transition-all duration-500`} style={{ width: `${battery}%` }}></div>
+                                <span class="absolute inset-0 flex items-center justify-center font-black text-sm">{battery}%</span>
+                            </div>
+                            
+                            <input 
+                                type="range" min="0" max="100" value={battery} onChange={handleBatteryChange}
+                                class="w-full mt-4 accent-[#BE123C]"
+                            />
+                            <p class="font-bold text-[#BE123C] mt-2">{status.text}</p>
+                        </div>
+
+                        {/* Copy-Paste Boundary Texts (Shows when battery is low) */}
+                        <div class="berry-card p-6 bg-white space-y-4">
+                            <div class="flex items-center gap-2 border-b-2 border-slate-100 pb-2">
+                                <span class="text-xl">🛡️</span>
+                                <h3 class="bubbly-font font-black text-lg">Auto-Boundary Texts</h3>
+                            </div>
+                            <p class="text-xs font-semibold text-slate-500">Too tired to think of an excuse? Just copy and paste these gentle boundary texts to your friends.</p>
+                            
+                            <div class="space-y-3 pt-2">
+                                {boundaries.map((text, idx) => (
+                                    <div key={idx} class="p-3 bg-[#FFF1F2] border-2 border-[#BE123C] rounded-xl flex gap-3 items-center shadow-[2px_2px_0px_0px_#FDA4AF]">
+                                        <p class="text-sm font-semibold flex-1">{text}</p>
+                                        <button onClick={() => copyToClipboard(text)} class="p-2 bg-white rounded-lg border-2 border-[#BE123C] font-bold text-xs berry-btn hover:bg-slate-50">
+                                            Copy
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 2. TEXT INBOX (Object Permanence for Friends)
+        // ==========================================
+        function InboxView({ state, setState }) {
+            const [newName, setNewName] = React.useState("");
+            const [newReason, setNewReason] = React.useState("");
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newName) return;
+                playSound('click');
+                setState({
+                    ...state,
+                    textInbox: [{ id: Date.now().toString(), name: newName, reason: newReason, replied: false }, ...state.textInbox]
+                });
+                setNewName(""); setNewReason("");
+            };
+
+            const toggleReply = (id) => {
+                playSound('success');
+                setState({
+                    ...state,
+                    textInbox: state.textInbox.map(t => t.id === id ? { ...t, replied: !t.replied } : t)
+                });
+            };
+
+            const handleDelete = (id) => {
+                playSound('click');
+                setState({ ...state, textInbox: state.textInbox.filter(t => t.id !== id) });
+            };
+
+            const pendingCount = state.textInbox.filter(t => !t.replied).length;
+
+            return (
+                <div class="space-y-6 max-w-4xl mx-auto">
+                    <div class="berry-card p-6 bg-[#FCE7F3] rounded-3xl flex justify-between items-center">
+                        <div>
+                            <h2 class="bubbly-font text-3xl font-black text-[#9D174D]">The "Reply Later" Inbox 💬</h2>
+                            <p class="font-semibold text-[#831843] mt-1">Read a message but don't have the executive function to reply right now? Park it here so you don't forget them.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="berry-card p-6 bg-white space-y-4 h-fit">
+                            <h3 class="bubbly-font font-black text-lg">➕ Park a Message</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div><label class="text-xs font-bold block mb-1">Who messaged you?</label><input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Mom, Boss, Sarah" class="w-full p-2.5 border-2 border-[#BE123C] rounded-xl text-sm" /></div>
+                                <div><label class="text-xs font-bold block mb-1">What is it about? (Optional)</label><input type="text" value={newReason} onChange={e => setNewReason(e.target.value)} placeholder="e.g. Dinner plans" class="w-full p-2.5 border-2 border-[#BE123C] rounded-xl text-sm" /></div>
+                                <button type="submit" class="w-full p-3 bg-[#FBCFE8] border-2 border-[#BE123C] rounded-xl font-bold berry-btn text-sm">Save to Reply Later 📥</button>
+                            </form>
+                        </div>
+
+                        <div class="lg:col-span-2 berry-card p-6 bg-white space-y-4">
+                            <div class="flex justify-between items-center border-b-2 border-slate-100 pb-2">
+                                <h3 class="bubbly-font font-black text-lg">Unread Stack</h3>
+                                <span class="text-xs font-bold bg-rose-100 text-rose-700 px-3 py-1 rounded-full border border-rose-300">{pendingCount} pending</span>
+                            </div>
+
+                            <div class="space-y-3 pt-2">
+                                {state.textInbox.length === 0 ? (
+                                    <div class="p-8 text-center bg-[#FFF1F2] border-2 border-dashed border-[#FDA4AF] rounded-2xl font-bold text-rose-400">Inbox Zero! You replied to everyone. ✨</div>
+                                ) : (
+                                    state.textInbox.map(msg => (
+                                        <div key={msg.id} class={`p-4 border-2 border-[#BE123C] rounded-xl flex justify-between items-center transition-all ${msg.replied ? 'bg-slate-50 opacity-60' : 'bg-[#FFF1F2] shadow-[3px_3px_0px_0px_#FDA4AF]'}`}>
+                                            <div class="flex items-center gap-3">
+                                                <button onClick={() => toggleReply(msg.id)} class={`w-6 h-6 rounded border-2 border-[#BE123C] flex items-center justify-center font-bold text-xs ${msg.replied ? 'bg-[#BE123C] text-white' : 'bg-white'}`}>
+                                                    {msg.replied ? "✓" : ""}
+                                                </button>
+                                                <div>
+                                                    <h4 class={`font-black text-sm ${msg.replied ? 'line-through text-slate-400' : 'text-slate-800'}`}>{msg.name}</h4>
+                                                    {msg.reason && <p class={`text-xs font-semibold ${msg.replied ? 'text-slate-400' : 'text-slate-500'}`}>{msg.reason}</p>}
+                                                </div>
+                                            </div>
+                                            <button onClick={() => handleDelete(msg.id)} class="text-slate-400 hover:text-rose-500 font-bold px-2">✕</button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 3. DOOMSCROLL INTERRUPTER
+        // ==========================================
+        function DoomscrollView() {
+            const [minutes, setMinutes] = React.useState(15);
+            const [timeLeft, setTimeLeft] = React.useState(0);
+            const [isRunning, setIsRunning] = React.useState(false);
+
+            React.useEffect(() => {
+                let timer;
+                if (isRunning && timeLeft > 0) {
+                    timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+                } else if (isRunning && timeLeft === 0) {
+                    setIsRunning(false);
+                    playSound('alarm');
+                    // Flash screen by adding class to body
+                    document.body.classList.add('flash-active');
+                    setTimeout(() => {
+                        document.body.classList.remove('flash-active');
+                        alert("🚨 DOOMSCROLL INTERRUPT! 🚨\n\nClose the app. Look away from the screen. Blink your eyes. You are free now.");
+                    }, 2000);
+                }
+                return () => clearInterval(timer);
+            }, [isRunning, timeLeft]);
+
+            const startTimer = () => {
+                playSound('click');
+                setTimeLeft(minutes * 60);
+                setIsRunning(true);
+            };
+
+            const stopTimer = () => {
+                playSound('click');
+                setIsRunning(false);
+                setTimeLeft(0);
+            };
+
+            const formatTime = (secs) => {
+                const m = Math.floor(secs / 60).toString().padStart(2, "0");
+                const s = (secs % 60).toString().padStart(2, "0");
+                return `${m}:${s}`;
+            };
+
+            return (
+                <div class="space-y-6 max-w-2xl mx-auto text-center mt-10">
+                    <div class="text-7xl mb-4 animate-bounce">📱</div>
+                    <h2 class="bubbly-font text-4xl font-black text-[#BE123C]">Doomscroll Interrupter</h2>
+                    <p class="font-semibold text-slate-600">About to open TikTok, Instagram, or Twitter? Set a safety timer. When it goes off, the alarm will break your dopamine trance.</p>
+
+                    <div class="berry-card p-8 bg-white mt-8 space-y-6">
+                        {!isRunning ? (
+                            <>
+                                <div>
+                                    <label class="font-bold text-sm text-slate-500 block mb-2">I will only scroll for...</label>
+                                    <select value={minutes} onChange={e => { playSound(); setMinutes(parseInt(e.target.value)); }} class="p-3 border-2 border-[#BE123C] rounded-xl text-xl font-black bg-[#FFF1F2]">
+                                        <option value={5}>5 Minutes (Quick check)</option>
+                                        <option value={15}>15 Minutes (Standard)</option>
+                                        <option value={30}>30 Minutes (Deep dive)</option>
+                                    </select>
+                                </div>
+                                <button onClick={startTimer} class="w-full py-4 bg-[#BE123C] text-white border-2 border-slate-900 rounded-2xl font-black text-lg berry-btn">
+                                    Set Trap & Start Scrolling 🚨
+                                </button>
+                            </>
+                        ) : (
+                            <div class="py-6 space-y-4">
+                                <span class="text-sm font-bold text-rose-500 uppercase tracking-widest animate-pulse block">Trap is active. Go scroll.</span>
+                                <div class="text-8xl font-black tabular-nums tracking-tighter text-slate-800">{formatTime(timeLeft)}</div>
+                                <button onClick={stopTimer} class="px-6 py-2 bg-slate-100 border-2 border-slate-300 rounded-xl font-bold text-slate-500 hover:bg-slate-200">
+                                    I escaped early! (Cancel)
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 4. BURNOUT FIRST-AID KIT (5-4-3-2-1 Grounding)
+        // ==========================================
+        function FirstAidView() {
+            const steps = [
+                { num: 5, action: "Things you can SEE", desc: "Look around you. Notice the texture of a wall, a pen, or a shadow." },
+                { num: 4, action: "Things you can FEEL", desc: "Touch your clothes, the desk, or feel the chair supporting your back." },
+                { num: 3, action: "Things you can HEAR", desc: "Listen closely. A fan? A distant car? Your own breath?" },
+                { num: 2, action: "Things you can SMELL", desc: "Is there coffee? Perfume? Or just the fresh air?" },
+                { num: 1, action: "Thing you can TASTE", desc: "Take a sip of water, or just swallow and notice the sensation." }
+            ];
+
+            const [activeStep, setActiveStep] = React.useState(0);
+
+            const nextStep = () => {
+                playSound('click');
+                if (activeStep < steps.length) setActiveStep(s => s + 1);
+            };
+
+            const reset = () => {
+                playSound('click');
+                setActiveStep(0);
+            };
+
+            return (
+                <div class="space-y-6 max-w-3xl mx-auto">
+                    <div class="berry-card p-6 bg-[#E0E7FF] border-[#3730A3] shadow-[4px_4px_0px_0px_#A5B4FC]">
+                        <h2 class="bubbly-font text-3xl font-black text-[#312E81]">Burnout First-Aid Kit 🩹</h2>
+                        <p class="font-semibold text-[#4338CA] mt-2">Are you overstimulated, panicking, or completely burnt out right now? Use the 5-4-3-2-1 grounding technique to bring your brain back to the present moment.</p>
+                    </div>
+
+                    <div class="berry-card p-8 bg-white text-center min-h-[400px] flex flex-col justify-center border-[#3730A3]">
+                        {activeStep === 0 ? (
+                            <div class="space-y-6">
+                                <div class="text-6xl animate-bounce">🫁</div>
+                                <h3 class="text-2xl font-black text-slate-800">Ready to ground yourself?</h3>
+                                <button onClick={nextStep} class="px-8 py-4 bg-[#4338CA] text-white border-2 border-slate-900 rounded-2xl font-black text-lg berry-btn shadow-[3px_3px_0px_0px_#1E1B4B]">
+                                    Start Grounding Exercise
+                                </button>
+                            </div>
+                        ) : activeStep <= steps.length ? (
+                            <div class="space-y-8 animate-fade-in">
+                                <div class="w-20 h-20 mx-auto bg-[#E0E7FF] border-4 border-[#4338CA] rounded-full flex items-center justify-center text-4xl font-black text-[#312E81]">
+                                    {steps[activeStep - 1].num}
+                                </div>
+                                <div>
+                                    <h3 class="text-3xl font-black text-slate-800">{steps[activeStep - 1].action}</h3>
+                                    <p class="text-slate-500 font-semibold mt-4 text-lg">{steps[activeStep - 1].desc}</p>
+                                </div>
+                                <button onClick={nextStep} class="px-10 py-3 bg-[#EEF2FF] border-2 border-[#4338CA] text-[#4338CA] rounded-full font-black text-base hover:bg-[#E0E7FF] transition-colors">
+                                    Done. Next ➡️
+                                </button>
+                            </div>
+                        ) : (
+                            <div class="space-y-6 animate-fade-in">
+                                <div class="text-6xl">✨</div>
+                                <h3 class="text-2xl font-black text-slate-800">You are safe. You are here.</h3>
+                                <p class="text-slate-500 font-semibold">Take one final deep breath. Close the app when you are ready.</p>
+                                <button onClick={reset} class="px-6 py-2 text-xs font-bold text-slate-400 hover:text-slate-600 underline">
+                                    Start over
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

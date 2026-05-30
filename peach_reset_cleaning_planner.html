@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peach Reset - ADHD Chore & Tidy Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FFFDF9; /* Warm White */
+            color: #4A3B32; /* Dark Mocha */
+        }
+        
+        .bubbly-font {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* Peach Soft-Brutalism */
+        .peach-card {
+            background-color: #FFFFFF;
+            border: 3px solid #4A3B32;
+            box-shadow: 4px 4px 0px 0px #FFCBA4; /* Peach Shadow */
+            border-radius: 24px;
+            transition: all 0.2s ease;
+        }
+        .peach-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #FFCBA4;
+        }
+
+        .peach-btn {
+            border: 2px solid #4A3B32;
+            box-shadow: 2px 2px 0px 0px #4A3B32;
+            transition: all 0.1s ease;
+        }
+        .peach-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px #4A3B32;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #FFFDF9; }
+        ::-webkit-scrollbar-thumb { background: #FFCBA4; border-radius: 4px; }
+        
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(74, 59, 50, 0.4); z-index: 40; display: none;
+        }
+        .sidebar-overlay.active { display: block; }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: #4A3B32; color: #FFFDF9;
+            padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 14px; z-index: 9999;
+            animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.5s forwards; box-shadow: 4px 4px 0px 0px #FFCBA4;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+    </style>
+</head>
+<body class="antialiased min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- BUBBLY SOUND SYNTHESIZER (Web Audio API) ---
+        let isMuted = false;
+
+        const playSound = (type = 'click') => {
+            if (isMuted) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                const now = ctx.currentTime;
+                if (type === 'click') { // Standard click
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(700, now);
+                    osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'pop') { // Bubble pop for checking off chores
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08); // Fast upward sweep
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'delete') { // Soft down sweep
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'success') { // Clean room chime
+                    const freqs = [523.25, 659.25, 1046.50];
+                    freqs.forEach((f, i) => {
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.connect(g); g.connect(ctx.destination);
+                        o.frequency.setValueAtTime(f, now + i * 0.1);
+                        g.gain.setValueAtTime(0.1, now + i * 0.1);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.4);
+                        o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.4);
+                    });
+                }
+            } catch (e) {}
+        };
+
+        const showToast = (message) => {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        const exportScreenshot = async (elementId, filename) => {
+            try {
+                showToast("📸 Capturing Sunday Reset...");
+                playSound('click');
+                const element = document.getElementById(elementId);
+                const canvas = await html2canvas(element, { backgroundColor: '#FFFDF9', scale: 2 });
+                const link = document.createElement('a');
+                link.download = filename || 'peach_reset.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("✅ Ready for TikTok/IG!");
+            } catch(e) {
+                showToast("❌ Export failed.");
+            }
+        };
+
+        // --- DEFAULT STATE ---
+        const defaultState = {
+            zones: [
+                { id: "1", name: "🛏️ Bedroom Oasis", tasks: [{id:"t1", text:"Make the bed", done:false}, {id:"t2", text:"Put away 5 clothing items", done:false}] },
+                { id: "2", name: "🍳 Kitchen Reset", tasks: [{id:"t3", text:"Load dishwasher", done:false}, {id:"t4", text:"Wipe main counter", done:false}] },
+                { id: "3", name: "💻 Work Desk", tasks: [{id:"t5", text:"Throw away old receipts", done:false}, {id:"t6", text:"Organize cables", done:false}] }
+            ],
+            lowSpoons: [
+                { id: "1", text: "Throw away 3 pieces of trash right now" },
+                { id: "2", text: "Spray room freshener (Instant vibe change)" },
+                { id: "3", text: "Put all dirty clothes into one pile (Don't wash yet)" }
+            ],
+            doomBoxItems: [],
+            stats: { completedChores: 0 }
+        };
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('peach_tidy_state');
+                return saved ? JSON.parse(saved) : defaultState;
+            });
+
+            const [activeTab, setActiveTab] = React.useState("dashboard");
+            const [sidebarOpen, setSidebarOpen] = React.useState(window.innerWidth > 768);
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+            const [soundOn, setSoundOn] = React.useState(true);
+
+            React.useEffect(() => {
+                localStorage.setItem('peach_tidy_state', JSON.stringify(state));
+                isMuted = !soundOn;
+            }, [state, soundOn]);
+
+            const handleTabSelect = (tabId) => {
+                playSound('click');
+                setActiveTab(tabId);
+                setMobileMenuOpen(false);
+            };
+
+            const handleResetAll = () => {
+                if(confirm("Wipe all cleaning lists and stats?")) {
+                    playSound('delete');
+                    setState(defaultState);
+                    showToast("App reset to default.");
+                }
+            };
+
+            const tabs = [
+                { id: "dashboard", label: "Sunday Reset Board", icon: "✨", color: "bg-[#FFCBA4]" },
+                { id: "zones", label: "Zone Quests", icon: "🗺️", color: "bg-[#FFE5B4]" },
+                { id: "doombox", label: "Doom Box Sorter", icon: "📦", color: "bg-[#E8D5C4]" },
+                { id: "lowspoon", label: "Zero-Energy Chores", icon: "🔋", color: "bg-[#C1E1C1]" }
+            ];
+
+            return (
+                <div class="flex h-screen overflow-hidden relative">
+                    {/* Mobile Overlay */}
+                    <div class={`sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
+
+                    {/* --- SIDEBAR --- */}
+                    <div class={`h-full border-r-3 border-[#4A3B32] bg-white transition-all duration-300 flex flex-col z-50 
+                        ${window.innerWidth <= 768 ? (mobileMenuOpen ? 'fixed inset-y-0 left-0 w-72' : 'fixed -translate-x-full w-72') : (sidebarOpen ? 'w-80' : 'w-20')}`}>
+                        
+                        <div class="p-5 border-b-3 border-[#4A3B32] flex items-center justify-between bg-[#FFFDF9]">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl">🍑</span>
+                                {(sidebarOpen || mobileMenuOpen) && (
+                                    <div>
+                                        <h1 class="bubbly-font font-bold text-xl text-[#4A3B32] tracking-tight">PEACH RESET</h1>
+                                        <p class="text-[10px] font-bold text-[#8B4513] uppercase tracking-widest">Tidy & Chore Planner</p>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={() => { playSound(); if(window.innerWidth > 768) setSidebarOpen(!sidebarOpen); else setMobileMenuOpen(false); }} class="p-1.5 peach-btn bg-white rounded-lg hidden md:block">
+                                {sidebarOpen ? "◀" : "▶"}
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => handleTabSelect(tab.id)}
+                                    class={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[#4A3B32] text-left font-bold transition-all ${
+                                        activeTab === tab.id ? `${tab.color} translate-x-1 shadow-[3px_3px_0px_0px_#4A3B32]` : 'bg-white hover:bg-[#FFFDF9]'
+                                    }`}
+                                >
+                                    <span class="text-2xl">{tab.icon}</span>
+                                    {(sidebarOpen || mobileMenuOpen) && <span class="text-sm">{tab.label}</span>}
+                                </button>
+                            ))}
+                        </div>
+
+                        {(sidebarOpen || mobileMenuOpen) && (
+                            <div class="p-4 border-t-3 border-[#4A3B32] bg-[#FFFDF9] space-y-2">
+                                <button onClick={() => { playSound(); setSoundOn(!soundOn); }} class="w-full text-xs py-3 bg-white rounded-xl border-2 border-[#4A3B32] font-bold peach-btn">
+                                    {soundOn ? "🔊 Sounds Active" : "🔇 Sounds Muted"}
+                                </button>
+                                <button onClick={handleResetAll} class="w-full text-xs py-3 text-rose-600 bg-white rounded-xl border-2 border-rose-600 font-bold hover:bg-rose-50 transition-colors peach-btn">
+                                    🚨 Hard Reset Tracker
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* --- MAIN CONTENT --- */}
+                    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#FFFDF9]">
+                        <header class="p-4 border-b-3 border-[#4A3B32] bg-white flex items-center justify-between md:hidden">
+                            <button onClick={() => {playSound(); setMobileMenuOpen(true);}} class="p-2 peach-btn bg-[#FFFDF9] rounded-xl border-2 border-[#4A3B32] font-bold">
+                                🍔 Menu
+                            </button>
+                            <span class="bubbly-font font-bold text-lg tracking-tight text-[#4A3B32]">PEACH RESET</span>
+                        </header>
+
+                        <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                            {activeTab === "dashboard" && <DashboardView state={state} setState={setState} />}
+                            {activeTab === "zones" && <ZonesView state={state} setState={setState} />}
+                            {activeTab === "doombox" && <DoomBoxView state={state} setState={setState} />}
+                            {activeTab === "lowspoon" && <LowSpoonView state={state} setState={setState} />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 1. DASHBOARD VIEW (Sunday Reset)
+        // ==========================================
+        function DashboardView({ state, setState }) {
+            // Calculate progress
+            let totalTasks = 0;
+            let doneTasks = 0;
+            state.zones.forEach(zone => {
+                totalTasks += zone.tasks.length;
+                doneTasks += zone.tasks.filter(t => t.done).length;
+            });
+            const progress = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
+
+            return (
+                <div id="view-dashboard" class="space-y-6">
+                    <div class="peach-card p-6 md:p-8 bg-[#FFCBA4] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="bubbly-font text-3xl md:text-4xl font-bold">Sunday Reset Board ✨</h2>
+                            <p class="font-semibold text-[#8B4513] mt-2">Bypass ADHD cleaning paralysis. Take it one micro-task at a time.</p>
+                        </div>
+                        <button onClick={() => exportScreenshot('view-dashboard', 'sunday_reset.png')} class="px-5 py-2.5 bg-white border-2 border-[#4A3B32] rounded-full font-bold text-sm peach-btn">
+                            📸 Export Reset
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Progress Panel */}
+                        <div class="peach-card p-6 bg-white space-y-6 flex flex-col justify-between col-span-1">
+                            <div>
+                                <h3 class="bubbly-font font-bold text-xl">Cleaning Progress</h3>
+                                <p class="text-xs text-slate-500 font-bold mt-1">Every small step counts!</p>
+                            </div>
+                            
+                            <div class="text-center space-y-2">
+                                <span class="text-6xl font-black text-[#4A3B32]">{progress}%</span>
+                                <div class="w-full bg-slate-100 h-6 border-3 border-[#4A3B32] rounded-full overflow-hidden">
+                                    <div class="bg-[#C1E1C1] h-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                                </div>
+                                <span class="text-xs font-bold text-[#8B4513] block pt-2">Lifetime Chores Popped: {state.stats.completedChores} 🫧</span>
+                            </div>
+                        </div>
+
+                        {/* Zone Overview */}
+                        <div class="lg:col-span-2 peach-card p-6 bg-white space-y-4">
+                            <h3 class="bubbly-font font-bold text-xl">🗺️ Active Zones Overview</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {state.zones.map(zone => {
+                                    const zTotal = zone.tasks.length;
+                                    const zDone = zone.tasks.filter(t => t.done).length;
+                                    const zProg = zTotal === 0 ? 0 : Math.round((zDone/zTotal)*100);
+                                    const isComplete = zTotal > 0 && zTotal === zDone;
+                                    
+                                    return (
+                                        <div key={zone.id} class={`p-4 border-2 border-[#4A3B32] rounded-2xl ${isComplete ? 'bg-[#C1E1C1] opacity-80' : 'bg-[#FFFDF9] shadow-[2px_2px_0px_0px_#4A3B32]'}`}>
+                                            <div class="flex justify-between items-center mb-2">
+                                                <h4 class="font-bold text-sm truncate">{zone.name}</h4>
+                                                <span class="text-xs font-black">{zDone}/{zTotal}</span>
+                                            </div>
+                                            <div class="w-full bg-white h-2 border-2 border-[#4A3B32] rounded-full overflow-hidden">
+                                                <div class="bg-[#FFCBA4] h-full transition-all" style={{ width: `${zProg}%` }}></div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 2. ZONES VIEW (Room by room checklist)
+        // ==========================================
+        function ZonesView({ state, setState }) {
+            const [newZoneName, setNewZoneName] = React.useState("");
+            const [newTaskTexts, setNewTaskTexts] = React.useState({}); // Map zoneId -> new task text
+
+            const addZone = (e) => {
+                e.preventDefault();
+                if(!newZoneName) return;
+                playSound('click');
+                setState({ ...state, zones: [...state.zones, { id: Date.now().toString(), name: newZoneName, tasks: [] }] });
+                setNewZoneName("");
+            };
+
+            const addTask = (e, zoneId) => {
+                e.preventDefault();
+                const text = newTaskTexts[zoneId];
+                if(!text) return;
+                playSound('click');
+                
+                setState({
+                    ...state,
+                    zones: state.zones.map(z => z.id === zoneId ? { ...z, tasks: [...z.tasks, { id: Date.now().toString(), text, done: false }] } : z)
+                });
+                setNewTaskTexts({ ...newTaskTexts, [zoneId]: "" });
+            };
+
+            const toggleTask = (zoneId, taskId, currentStatus) => {
+                if(!currentStatus) {
+                    playSound('pop'); // Satisfying bubble pop!
+                    setState(prev => ({ ...prev, stats: { completedChores: prev.stats.completedChores + 1 } }));
+                } else {
+                    playSound('delete');
+                }
+
+                setState(prev => {
+                    const newZones = prev.zones.map(z => {
+                        if(z.id === zoneId) {
+                            const newTasks = z.tasks.map(t => t.id === taskId ? { ...t, done: !t.done } : t);
+                            // Check if zone just completed
+                            if(!currentStatus && newTasks.every(t => t.done)) {
+                                setTimeout(() => playSound('success'), 300); // Zone clear chime
+                            }
+                            return { ...z, tasks: newTasks };
+                        }
+                        return z;
+                    });
+                    return { ...prev, zones: newZones };
+                });
+            };
+
+            const deleteZone = (id) => {
+                playSound('delete');
+                setState({ ...state, zones: state.zones.filter(z => z.id !== id) });
+            };
+
+            return (
+                <div class="space-y-6">
+                    <div class="peach-card p-6 bg-[#FFE5B4] rounded-3xl">
+                        <h2 class="bubbly-font text-3xl md:text-4xl font-bold">Zone Quests 🗺️</h2>
+                        <p class="font-semibold text-[#8B4513] mt-2">Break down the mess room by room. Micro-tasks only!</p>
+                    </div>
+
+                    <div class="peach-card p-6 bg-white space-y-6">
+                        <form onSubmit={addZone} class="flex gap-2">
+                            <input type="text" value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="Add a new room/zone (e.g. Bathroom)" class="flex-1 p-3 border-2 border-[#4A3B32] rounded-xl font-bold bg-[#FFFDF9] focus:outline-none" />
+                            <button type="submit" class="px-6 py-3 bg-[#4A3B32] text-white rounded-xl font-bold peach-btn">+</button>
+                        </form>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+                            {state.zones.map(zone => (
+                                <div key={zone.id} class="border-3 border-[#4A3B32] rounded-2xl bg-[#FFFDF9] overflow-hidden flex flex-col shadow-[4px_4px_0px_0px_#E8D5C4]">
+                                    <div class="p-4 bg-[#E8D5C4] border-b-3 border-[#4A3B32] flex justify-between items-center">
+                                        <h3 class="font-bold text-lg">{zone.name}</h3>
+                                        <button onClick={() => deleteZone(zone.id)} class="text-rose-500 hover:text-rose-700 font-bold">✕</button>
+                                    </div>
+                                    <div class="p-4 flex-1 space-y-3">
+                                        {zone.tasks.map(task => (
+                                            <div key={task.id} class={`flex items-center gap-3 p-3 border-2 border-[#4A3B32] rounded-xl cursor-pointer transition-colors ${task.done ? 'bg-[#C1E1C1] opacity-70' : 'bg-white'}`} onClick={() => toggleTask(zone.id, task.id, task.done)}>
+                                                <div class={`w-6 h-6 rounded-md border-2 border-[#4A3B32] flex items-center justify-center font-bold text-xs ${task.done ? 'bg-[#4A3B32] text-white' : 'bg-white'}`}>{task.done ? "✓" : ""}</div>
+                                                <span class={`font-bold text-sm flex-1 ${task.done ? 'line-through text-[#4A3B32]' : ''}`}>{task.text}</span>
+                                            </div>
+                                        ))}
+                                        
+                                        <form onSubmit={(e) => addTask(e, zone.id)} class="flex gap-2 mt-4">
+                                            <input type="text" value={newTaskTexts[zone.id] || ""} onChange={e => setNewTaskTexts({...newTaskTexts, [zone.id]: e.target.value})} placeholder="Add micro-task..." class="flex-1 p-2 border-2 border-[#4A3B32] rounded-lg text-xs" />
+                                            <button type="submit" class="px-3 bg-[#FFCBA4] border-2 border-[#4A3B32] rounded-lg font-bold text-xs peach-btn">Add</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 3. DOOM BOX SORTER (Gamified Timer)
+        // ==========================================
+        function DoomBoxView({ state, setState }) {
+            const [newItem, setNewItem] = React.useState("");
+            const [timer, setTimer] = React.useState(900); // 15 mins
+            const [isRunning, setIsRunning] = React.useState(false);
+
+            React.useEffect(() => {
+                let interval;
+                if(isRunning && timer > 0) interval = setInterval(() => setTimer(t => t - 1), 1000);
+                else if (timer === 0) { setIsRunning(false); playSound('success'); alert("Doom Box Session Complete! Great job."); }
+                return () => clearInterval(interval);
+            }, [isRunning, timer]);
+
+            const addItem = (e) => {
+                e.preventDefault();
+                if(!newItem) return;
+                playSound('click');
+                setState({...state, doomBoxItems: [{id: Date.now().toString(), text: newItem, status: "pending"}, ...state.doomBoxItems]});
+                setNewItem("");
+            };
+
+            const sortItem = (id, status) => {
+                playSound('pop');
+                setState({...state, doomBoxItems: state.doomBoxItems.map(i => i.id === id ? {...i, status} : i)});
+            };
+
+            const clearSorted = () => {
+                playSound('delete');
+                setState({...state, doomBoxItems: state.doomBoxItems.filter(i => i.status === "pending")});
+            };
+
+            const formatTime = (secs) => {
+                const m = Math.floor(secs / 60).toString().padStart(2, "0");
+                const s = (secs % 60).toString().padStart(2, "0");
+                return `${m}:${s}`;
+            };
+
+            return (
+                <div class="space-y-6">
+                    <div class="peach-card p-6 bg-[#E8D5C4] rounded-3xl">
+                        <h2 class="bubbly-font text-3xl md:text-4xl font-bold">The Doom Box Sorter 📦</h2>
+                        <p class="font-semibold text-[#8B4513] mt-2">Set the 15-min timer. Pick one random pile of stuff. Categorize fast. No overthinking.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Timer & Input */}
+                        <div class="peach-card p-6 bg-white space-y-6 lg:col-span-1 h-fit">
+                            <div class="text-center p-6 border-3 border-[#4A3B32] rounded-2xl bg-[#FFFDF9] shadow-inner">
+                                <h3 class="font-bold text-sm text-slate-500 mb-2">Focus Sprint Timer</h3>
+                                <div class="text-5xl font-black tabular-nums">{formatTime(timer)}</div>
+                                <div class="flex gap-2 mt-4">
+                                    <button onClick={() => {playSound(); setIsRunning(!isRunning);}} class={`flex-1 py-2 rounded-xl border-2 border-[#4A3B32] font-bold text-sm peach-btn ${isRunning ? 'bg-[#FFCBA4]' : 'bg-[#C1E1C1]'}`}>{isRunning ? "Pause" : "Start Sprint"}</button>
+                                    <button onClick={() => {playSound(); setIsRunning(false); setTimer(900);}} class="flex-1 py-2 bg-slate-200 rounded-xl border-2 border-[#4A3B32] font-bold text-sm peach-btn">Reset</button>
+                                </div>
+                            </div>
+
+                            <form onSubmit={addItem} class="space-y-2">
+                                <label class="text-xs font-bold">What item did you pull out?</label>
+                                <div class="flex gap-2">
+                                    <input type="text" value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="e.g. Old batteries" class="flex-1 p-3 border-2 border-[#4A3B32] rounded-xl text-sm focus:outline-none" />
+                                    <button type="submit" class="px-4 bg-[#E8D5C4] border-2 border-[#4A3B32] rounded-xl font-bold peach-btn">+</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Sorter Board */}
+                        <div class="lg:col-span-2 peach-card p-6 bg-white space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="bubbly-font font-bold text-xl">Sorting Station</h3>
+                                <button onClick={clearSorted} class="text-xs font-bold text-rose-500 hover:underline">Clear Sorted Items</button>
+                            </div>
+
+                            <div class="space-y-3">
+                                {state.doomBoxItems.length === 0 ? (
+                                    <div class="p-8 text-center bg-[#FFFDF9] border-2 border-dashed border-[#4A3B32] rounded-2xl font-bold text-slate-400">Box is empty. Add items to sort!</div>
+                                ) : (
+                                    state.doomBoxItems.map(item => (
+                                        <div key={item.id} class={`p-4 border-2 border-[#4A3B32] rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${item.status !== 'pending' ? 'opacity-60 bg-slate-50' : 'bg-[#FFFDF9] shadow-[2px_2px_0px_0px_#4A3B32]'}`}>
+                                            <span class={`font-bold text-base ${item.status !== 'pending' ? 'line-through' : ''}`}>{item.text}</span>
+                                            
+                                            <div class="flex gap-2">
+                                                <button onClick={() => sortItem(item.id, 'trash')} class={`px-3 py-1.5 border-2 border-[#4A3B32] rounded-lg text-xs font-bold transition-colors ${item.status === 'trash' ? 'bg-rose-300' : 'bg-white hover:bg-rose-50'}`}>🗑️ Trash</button>
+                                                <button onClick={() => sortItem(item.id, 'keep')} class={`px-3 py-1.5 border-2 border-[#4A3B32] rounded-lg text-xs font-bold transition-colors ${item.status === 'keep' ? 'bg-[#C1E1C1]' : 'bg-white hover:bg-emerald-50'}`}>🏡 Keep</button>
+                                                <button onClick={() => sortItem(item.id, 'relocate')} class={`px-3 py-1.5 border-2 border-[#4A3B32] rounded-lg text-xs font-bold transition-colors ${item.status === 'relocate' ? 'bg-[#FFE5B4]' : 'bg-white hover:bg-amber-50'}`}>📦 Relocate</button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // 4. LOW-SPOON VAULT (Zero Energy Chores)
+        // ==========================================
+        function LowSpoonView({ state, setState }) {
+            const [newItem, setNewItem] = React.useState("");
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newItem) return;
+                playSound('click');
+                setState({ ...state, lowSpoons: [...state.lowSpoons, { id: Date.now().toString(), text: newItem }] });
+                setNewItem("");
+            };
+
+            const handleDelete = (id) => {
+                playSound('delete');
+                setState({ ...state, lowSpoons: state.lowSpoons.filter(i => i.id !== id) });
+            };
+
+            const completeChore = (id) => {
+                playSound('pop');
+                setState(prev => ({
+                    ...prev,
+                    stats: { completedChores: prev.stats.completedChores + 1 },
+                    lowSpoons: prev.lowSpoons.filter(i => i.id !== id) // Remove once done
+                }));
+                showToast("Low-spoon chore completed! You did something! 🎉");
+            };
+
+            return (
+                <div class="space-y-6 max-w-3xl mx-auto">
+                    <div class="peach-card p-6 bg-[#C1E1C1] rounded-3xl">
+                        <h2 class="bubbly-font text-3xl md:text-4xl font-bold">Zero-Energy Chores 🔋</h2>
+                        <p class="font-semibold text-[#3D5B3D] mt-2">For days when you have 0% battery. Pick one tiny, microscopic task and call it a win.</p>
+                    </div>
+
+                    <div class="peach-card p-6 bg-white space-y-6">
+                        <form onSubmit={handleAdd} class="flex gap-2">
+                            <input type="text" value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="Add a 2-minute micro-task..." class="flex-1 p-3 border-2 border-[#4A3B32] rounded-xl font-bold focus:outline-none bg-[#FFFDF9]" />
+                            <button type="submit" class="px-6 py-3 bg-[#C1E1C1] border-2 border-[#4A3B32] rounded-xl font-bold peach-btn">+</button>
+                        </form>
+
+                        <div class="space-y-3">
+                            {state.lowSpoons.length === 0 ? (
+                                <p class="text-center py-8 text-slate-400 font-bold">No micro-tasks listed. Add some easy wins!</p>
+                            ) : (
+                                state.lowSpoons.map(item => (
+                                    <div key={item.id} class="flex items-center justify-between p-4 border-2 border-[#4A3B32] rounded-2xl bg-[#FFFDF9] shadow-[3px_3px_0px_0px_#4A3B32] hover:translate-x-1 transition-transform">
+                                        <span class="font-bold text-base flex-1 pr-4">{item.text}</span>
+                                        <div class="flex gap-2">
+                                            <button onClick={() => completeChore(item.id)} class="px-4 py-2 bg-[#FFCBA4] border-2 border-[#4A3B32] rounded-lg font-bold text-xs peach-btn">Did it! ✨</button>
+                                            <button onClick={() => handleDelete(item.id)} class="px-3 py-2 bg-white border-2 border-[#4A3B32] rounded-lg font-bold text-xs hover:bg-rose-100">✕</button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

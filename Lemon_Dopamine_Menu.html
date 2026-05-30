@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lemon Reset - ADHD Dopamine Menu</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #FEFCE8; /* Vanilla background */
+            color: #422006; /* Dark Amber */
+        }
+        
+        .bubbly-font {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* Lemon Soft-Brutalism */
+        .lemon-card {
+            background-color: #FFFFFF;
+            border: 3px solid #713F12; /* Deep Amber */
+            box-shadow: 4px 4px 0px 0px #FDE047; /* Bright Lemon Shadow */
+            border-radius: 28px;
+            transition: all 0.2s ease;
+        }
+        .lemon-card:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px #FDE047;
+        }
+
+        .lemon-btn {
+            border: 2px solid #713F12;
+            box-shadow: 2px 2px 0px 0px #713F12;
+            transition: all 0.1s ease;
+        }
+        .lemon-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px #713F12;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #FEFCE8; }
+        ::-webkit-scrollbar-thumb { background: #FDE047; border-radius: 4px; }
+        
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            position: fixed; inset: 0; background: rgba(66, 32, 6, 0.4); z-index: 40; display: none;
+        }
+        .sidebar-overlay.active { display: block; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: #713F12; color: #FEFCE8;
+            padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 14px; z-index: 9999;
+            animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
+            box-shadow: 4px 4px 0px 0px #FDE047;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+
+        /* Roulette Spin Animation */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(1080deg); } /* 3 full rotations */
+        }
+        .spin-active { animation: spin 2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+    </style>
+</head>
+<body class="antialiased min-h-screen">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        let audioCtx = null;
+        let isMuted = false;
+
+        const initAudio = () => {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        };
+
+        const playSound = (type = 'click') => {
+            if (isMuted) return;
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                
+                if (type === 'click') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.05);
+                } else if (type === 'roulette') {
+                    // Quick clicking sound like a wheel of fortune
+                    for(let i=0; i<15; i++) {
+                        setTimeout(() => {
+                            if(isMuted) return;
+                            const o = audioCtx.createOscillator();
+                            const g = audioCtx.createGain();
+                            o.type = 'square';
+                            o.frequency.setValueAtTime(1000 + (Math.random()*500), audioCtx.currentTime);
+                            g.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                            o.connect(g); g.connect(audioCtx.destination);
+                            o.start(); o.stop(audioCtx.currentTime + 0.05);
+                        }, i * (100 + (i*10))); // Gradually slowing down
+                    }
+                } else if (type === 'success') {
+                    const freqs = [523.25, 659.25, 1046.50];
+                    freqs.forEach((f, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.type = 'sine';
+                        o.frequency.setValueAtTime(f, now + i * 0.1);
+                        g.gain.setValueAtTime(0.1, now + i * 0.1);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.4);
+                        o.connect(g); g.connect(audioCtx.destination);
+                        o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.5);
+                    });
+                }
+            } catch(e) {}
+        };
+
+        const showToast = (message) => {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        };
+
+        const defaultState = {
+            menu: {
+                starters: [
+                    { id: "1", text: "Drink a glass of cold water" },
+                    { id: "2", text: "Stretch arms for 2 minutes" },
+                    { id: "3", text: "Step outside and look at the sky" }
+                ],
+                mains: [
+                    { id: "4", text: "Play cozy video games (Animal Crossing)" },
+                    { id: "5", text: "Read a fiction book for 30 mins" },
+                    { id: "6", text: "Go for a hot girl walk" }
+                ],
+                sides: [
+                    { id: "7", text: "Listen to a true crime podcast" },
+                    { id: "8", text: "Put on a Lofi playlist" }
+                ],
+                desserts: [
+                    { id: "9", text: "Scroll TikTok (Set 20 min timer!)" },
+                    { id: "10", text: "Online window shopping (No checkout)" }
+                ]
+            },
+            hyperfixations: [
+                { id: "1", name: "Mechanical Keyboards", date: "Mar 2026", status: "active" },
+                { id: "2", name: "Crocheting chunky sweaters", date: "Jan 2026", status: "parked" },
+                { id: "3", name: "Making sourdough bread", date: "Nov 2025", status: "parked" }
+            ]
+        };
+
+        function App() {
+            const [state, setState] = React.useState(() => {
+                const saved = localStorage.getItem('lemon_dopamine_state');
+                return saved ? JSON.parse(saved) : defaultState;
+            });
+            const [activeTab, setActiveTab] = React.useState("menu");
+            const [sidebarOpen, setSidebarOpen] = React.useState(window.innerWidth > 768);
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+            const [soundOn, setSoundOn] = React.useState(true);
+
+            React.useEffect(() => {
+                localStorage.setItem('lemon_dopamine_state', JSON.stringify(state));
+                isMuted = !soundOn;
+            }, [state, soundOn]);
+
+            const tabs = [
+                { id: "menu", label: "The Dopamine Menu", icon: "📖", color: "bg-[#FEF08A]" },
+                { id: "spin", label: "Spin The Lemon", icon: "🍋", color: "bg-[#FDE047]" },
+                { id: "hobby", label: "Hyperfixation Hub", icon: "🎨", color: "bg-[#FEF9C3]" }
+            ];
+
+            const exportScreenshot = async (elementId, filename) => {
+                try {
+                    showToast("📸 Capturing menu...");
+                    playSound('click');
+                    const element = document.getElementById(elementId);
+                    const canvas = await html2canvas(element, { backgroundColor: '#FEFCE8', scale: 2 });
+                    const link = document.createElement('a');
+                    link.download = filename || 'lemon_reset.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } catch(e) {
+                    showToast("❌ Export failed.");
+                }
+            };
+
+            return (
+                <div class="flex h-screen overflow-hidden relative">
+                    <div class={`sidebar-overlay ${mobileMenuOpen ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}></div>
+
+                    {/* SIDEBAR */}
+                    <div class={`h-full border-r-3 border-[#713F12] bg-white transition-all duration-300 flex flex-col z-50 
+                        ${window.innerWidth <= 768 ? (mobileMenuOpen ? 'fixed inset-y-0 left-0 w-72' : 'fixed -translate-x-full w-72') : (sidebarOpen ? 'w-80' : 'w-20')}`}>
+                        
+                        <div class="p-5 border-b-3 border-[#713F12] flex items-center justify-between bg-[#FEFCE8]">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl">🍋</span>
+                                {(sidebarOpen || mobileMenuOpen) && (
+                                    <div>
+                                        <h1 class="bubbly-font font-black text-xl text-[#713F12] tracking-tight">LEMON RESET</h1>
+                                        <p class="text-[10px] font-bold text-[#CA8A04] uppercase tracking-widest">Dopamine Hub</p>
+                                    </div>
+                                )}
+                            </div>
+                            <button onClick={() => { playSound(); if(window.innerWidth > 768) setSidebarOpen(!sidebarOpen); else setMobileMenuOpen(false); }} class="p-1.5 lemon-btn bg-white rounded-lg hidden md:block">
+                                {sidebarOpen ? "◀" : "▶"}
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => { playSound(); setActiveTab(tab.id); setMobileMenuOpen(false); }}
+                                    class={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-[#713F12] text-left font-bold transition-all ${
+                                        activeTab === tab.id ? `${tab.color} translate-x-1 shadow-[3px_3px_0px_0px_#713F12]` : 'bg-white hover:bg-[#FEFCE8]'
+                                    }`}
+                                >
+                                    <span class="text-2xl">{tab.icon}</span>
+                                    {(sidebarOpen || mobileMenuOpen) && <span class="text-sm">{tab.label}</span>}
+                                </button>
+                            ))}
+                        </div>
+
+                        {(sidebarOpen || mobileMenuOpen) && (
+                            <div class="p-4 border-t-3 border-[#713F12] bg-[#FEFCE8] space-y-2">
+                                <button onClick={() => { playSound(); setSoundOn(!soundOn); }} class="w-full text-xs py-3 bg-white rounded-xl border-2 border-[#713F12] font-bold">
+                                    {soundOn ? "🔊 Sounds Active" : "🔇 Sounds Muted"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* MAIN CONTENT */}
+                    <div class="flex-1 flex flex-col h-full overflow-hidden bg-[#FEFCE8]">
+                        <header class="p-4 border-b-3 border-[#713F12] bg-white flex items-center justify-between md:hidden">
+                            <button onClick={() => {playSound(); setMobileMenuOpen(true);}} class="p-2 lemon-btn bg-[#FEFCE8] rounded-xl border-2 border-[#713F12] font-bold">
+                                🍔 Menu
+                            </button>
+                            <span class="bubbly-font font-black text-lg text-[#713F12]">LEMON RESET</span>
+                        </header>
+
+                        <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                            {activeTab === "menu" && <DopamineMenuView state={state} setState={setState} exportFn={exportScreenshot} />}
+                            {activeTab === "spin" && <SpinWheelView state={state} />}
+                            {activeTab === "hobby" && <HyperfixationView state={state} setState={setState} />}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        function DopamineMenuView({ state, setState, exportFn }) {
+            const [newItem, setNewItem] = React.useState("");
+            const [category, setCategory] = React.useState("starters");
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newItem) return;
+                playSound('click');
+                setState({
+                    ...state,
+                    menu: {
+                        ...state.menu,
+                        [category]: [...state.menu[category], { id: Date.now().toString(), text: newItem }]
+                    }
+                });
+                setNewItem("");
+            };
+
+            const handleDelete = (cat, id) => {
+                playSound('click');
+                setState({
+                    ...state,
+                    menu: {
+                        ...state.menu,
+                        [cat]: state.menu[cat].filter(item => item.id !== id)
+                    }
+                });
+            };
+
+            return (
+                <div id="view-menu" class="space-y-6 max-w-5xl mx-auto">
+                    <div class="lemon-card p-6 md:p-8 bg-[#FEF08A] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="bubbly-font text-3xl md:text-4xl font-black text-[#713F12]">The Dopamine Menu 📖</h2>
+                            <p class="font-semibold text-[#854D0E] mt-2">Understimulated? Pick a joyful activity from your personal restaurant menu instead of doomscrolling.</p>
+                        </div>
+                        <button onClick={() => exportFn('view-menu', 'dopamine_menu.png')} class="px-5 py-2.5 bg-white border-2 border-[#713F12] rounded-full font-bold text-sm lemon-btn">
+                            📸 Export Menu
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        {/* Input Form */}
+                        <div class="lemon-card p-6 bg-white space-y-4 lg:col-span-1 h-fit">
+                            <h3 class="bubbly-font font-black text-lg">➕ Add to Menu</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-bold block mb-1 text-[#854D0E]">Activity Category</label>
+                                    <select value={category} onChange={e => {playSound('click'); setCategory(e.target.value)}} class="w-full p-2.5 border-2 border-[#713F12] rounded-xl text-sm font-bold bg-[#FEFCE8]">
+                                        <option value="starters">🥗 Starters (5-10 mins)</option>
+                                        <option value="mains">🍝 Mains (1+ hours)</option>
+                                        <option value="sides">🍟 Sides (Multitasking)</option>
+                                        <option value="desserts">🍦 Desserts (Guilty Pleasures)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold block mb-1 text-[#854D0E]">Activity Name</label>
+                                    <input type="text" value={newItem} onChange={e => setNewItem(e.target.value)} placeholder="e.g. Do a face mask" class="w-full p-2.5 border-2 border-[#713F12] rounded-xl text-sm" />
+                                </div>
+                                <button type="submit" class="w-full p-3 bg-[#FDE047] border-2 border-[#713F12] rounded-xl font-bold lemon-btn text-sm">Add to Menu ✨</button>
+                            </form>
+                        </div>
+
+                        {/* Menu Display Grid */}
+                        <div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            {/* Starters */}
+                            <div class="lemon-card p-5 bg-[#FEF9C3] border-dashed border-4 space-y-3">
+                                <div class="border-b-2 border-[#EAB308] pb-2">
+                                    <h3 class="font-black text-xl text-[#713F12] bubbly-font">🥗 Starters</h3>
+                                    <p class="text-[10px] font-bold text-[#A16207] uppercase">Quick 5-10 min energy boosts. Very low friction.</p>
+                                </div>
+                                <ul class="space-y-2">
+                                    {state.menu.starters.map(item => (
+                                        <li key={item.id} class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-[#CA8A04] shadow-sm">
+                                            <span class="text-sm font-bold">{item.text}</span>
+                                            <button onClick={() => handleDelete('starters', item.id)} class="text-xs text-rose-500 hover:font-black">✕</button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* Mains */}
+                            <div class="lemon-card p-5 bg-white border-[#CA8A04] space-y-3">
+                                <div class="border-b-2 border-[#EAB308] pb-2">
+                                    <h3 class="font-black text-xl text-[#713F12] bubbly-font">🍝 Mains</h3>
+                                    <p class="text-[10px] font-bold text-[#A16207] uppercase">Deep dive activities. Takes 1+ hours. High dopamine.</p>
+                                </div>
+                                <ul class="space-y-2">
+                                    {state.menu.mains.map(item => (
+                                        <li key={item.id} class="flex justify-between items-center bg-[#FEFCE8] p-2.5 rounded-lg border border-[#FDE047] shadow-sm">
+                                            <span class="text-sm font-bold">{item.text}</span>
+                                            <button onClick={() => handleDelete('mains', item.id)} class="text-xs text-rose-500 hover:font-black">✕</button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* Sides */}
+                            <div class="lemon-card p-5 bg-white border-[#CA8A04] space-y-3">
+                                <div class="border-b-2 border-[#EAB308] pb-2">
+                                    <h3 class="font-black text-xl text-[#713F12] bubbly-font">🍟 Sides</h3>
+                                    <p class="text-[10px] font-bold text-[#A16207] uppercase">Things to do WHILE doing boring tasks (Multitasking).</p>
+                                </div>
+                                <ul class="space-y-2">
+                                    {state.menu.sides.map(item => (
+                                        <li key={item.id} class="flex justify-between items-center bg-[#FEFCE8] p-2.5 rounded-lg border border-[#FDE047] shadow-sm">
+                                            <span class="text-sm font-bold">{item.text}</span>
+                                            <button onClick={() => handleDelete('sides', item.id)} class="text-xs text-rose-500 hover:font-black">✕</button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* Desserts */}
+                            <div class="lemon-card p-5 bg-[#FFEDD5] border-[#EA580C] space-y-3">
+                                <div class="border-b-2 border-[#F97316] pb-2">
+                                    <h3 class="font-black text-xl text-[#9A3412] bubbly-font">🍦 Desserts</h3>
+                                    <p class="text-[10px] font-bold text-[#C2410C] uppercase">Guilty pleasures. Use a timer to avoid getting stuck!</p>
+                                </div>
+                                <ul class="space-y-2">
+                                    {state.menu.desserts.map(item => (
+                                        <li key={item.id} class="flex justify-between items-center bg-white p-2.5 rounded-lg border border-[#FB923C] shadow-sm">
+                                            <span class="text-sm font-bold">{item.text}</span>
+                                            <button onClick={() => handleDelete('desserts', item.id)} class="text-xs text-rose-500 hover:font-black">✕</button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function SpinWheelView({ state }) {
+            const [isSpinning, setIsSpinning] = React.useState(false);
+            const [result, setResult] = React.useState(null);
+
+            const allItems = [
+                ...state.menu.starters.map(i => ({...i, type: 'Starter 🥗'})),
+                ...state.menu.mains.map(i => ({...i, type: 'Main 🍝'})),
+                ...state.menu.sides.map(i => ({...i, type: 'Side 🍟'})),
+                ...state.menu.desserts.map(i => ({...i, type: 'Dessert 🍦'}))
+            ];
+
+            const handleSpin = () => {
+                if (allItems.length === 0) {
+                    alert("Please add items to your Dopamine Menu first!");
+                    return;
+                }
+                
+                setIsSpinning(true);
+                setResult(null);
+                playSound('roulette');
+
+                setTimeout(() => {
+                    const randomItem = allItems[Math.floor(Math.random() * allItems.length)];
+                    setResult(randomItem);
+                    setIsSpinning(false);
+                    playSound('success');
+                }, 2000);
+            };
+
+            return (
+                <div class="space-y-6 max-w-3xl mx-auto flex flex-col items-center justify-center min-h-[70vh] text-center">
+                    <div class="text-center space-y-2">
+                        <h2 class="bubbly-font text-4xl md:text-5xl font-black text-[#713F12]">Spin The Lemon 🍋</h2>
+                        <p class="font-semibold text-[#854D0E] max-w-lg mx-auto">Decision paralysis got you stuck? Let the universe (and this wheel) pick your next dopamine hit.</p>
+                    </div>
+
+                    <div class="py-12">
+                        <div class={`text-9xl transition-transform origin-center ${isSpinning ? 'spin-active' : ''}`}>
+                            🍋
+                        </div>
+                    </div>
+
+                    <div class="w-full max-w-md">
+                        {!result && !isSpinning && (
+                            <button onClick={handleSpin} class="w-full py-5 bg-[#FDE047] border-4 border-[#713F12] rounded-full font-black text-2xl lemon-btn text-[#713F12] shadow-[6px_6px_0px_0px_#713F12]">
+                                SPIN FOR DOPAMINE!
+                            </button>
+                        )}
+                        
+                        {isSpinning && (
+                            <div class="text-xl font-bold text-slate-400 animate-pulse">Consulting the ADHD gods...</div>
+                        )}
+
+                        {result && !isSpinning && (
+                            <div class="lemon-card p-8 bg-white border-[#713F12] space-y-4 animate-fade-in shadow-[6px_6px_0px_0px_#FDE047]">
+                                <span class="text-xs font-black uppercase tracking-widest text-[#CA8A04] bg-[#FEF9C3] px-3 py-1 rounded-full border border-[#FDE047]">
+                                    {result.type}
+                                </span>
+                                <h3 class="text-2xl font-black text-[#713F12] leading-snug">{result.text}</h3>
+                                <div class="pt-4">
+                                    <button onClick={handleSpin} class="text-sm font-bold text-[#854D0E] hover:underline">Spin again 🔄</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        function HyperfixationView({ state, setState }) {
+            const [newHobby, setNewHobby] = React.useState("");
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                if (!newHobby) return;
+                playSound('click');
+                const date = new Date().toLocaleDateString(undefined, {month: 'short', year: 'numeric'});
+                setState({
+                    ...state,
+                    hyperfixations: [{ id: Date.now().toString(), name: newHobby, date: date, status: "active" }, ...state.hyperfixations]
+                });
+                setNewHobby("");
+            };
+
+            const toggleStatus = (id, currentStatus) => {
+                playSound('success');
+                const newStatus = currentStatus === 'active' ? 'parked' : 'active';
+                setState({
+                    ...state,
+                    hyperfixations: state.hyperfixations.map(h => h.id === id ? { ...h, status: newStatus } : h)
+                });
+            };
+
+            const handleDelete = (id) => {
+                playSound('click');
+                setState({ ...state, hyperfixations: state.hyperfixations.filter(h => h.id !== id) });
+            };
+
+            return (
+                <div class="space-y-6 max-w-4xl mx-auto">
+                    <div class="lemon-card p-6 bg-[#FEF9C3] rounded-3xl flex justify-between items-center">
+                        <div>
+                            <h2 class="bubbly-font text-3xl font-black text-[#713F12]">Hyperfixation Hub 🎨</h2>
+                            <p class="font-semibold text-[#854D0E] mt-1">Track your current obsessions. Park the old ones guilt-free. They are waiting for you whenever you're ready.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="lemon-card p-6 bg-white space-y-4 h-fit">
+                            <h3 class="bubbly-font font-black text-lg">✨ New Obsession</h3>
+                            <form onSubmit={handleAdd} class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-bold block mb-1">What are we buying supplies for today?</label>
+                                    <input type="text" value={newHobby} onChange={e => setNewHobby(e.target.value)} placeholder="e.g. Tufting, Mechanical Keyboards..." class="w-full p-3 border-2 border-[#713F12] rounded-xl text-sm font-semibold" />
+                                </div>
+                                <button type="submit" class="w-full p-3 bg-[#FEF08A] border-2 border-[#713F12] rounded-xl font-bold lemon-btn text-sm">Lock it in 🔒</button>
+                            </form>
+                        </div>
+
+                        <div class="md:col-span-2 space-y-6">
+                            
+                            {/* Active Obsessions */}
+                            <div class="lemon-card p-6 bg-white space-y-4">
+                                <div class="flex items-center gap-2 border-b-2 border-slate-100 pb-2">
+                                    <span class="text-xl animate-pulse">🔥</span>
+                                    <h3 class="bubbly-font font-black text-lg text-rose-600">Currently Fixated On</h3>
+                                </div>
+                                <div class="space-y-3 pt-2">
+                                    {state.hyperfixations.filter(h => h.status === 'active').map(hobby => (
+                                        <div key={hobby.id} class="p-4 border-2 border-[#713F12] rounded-xl flex justify-between items-center bg-[#FEFCE8] shadow-[3px_3px_0px_0px_#FDE047]">
+                                            <div>
+                                                <h4 class="font-black text-base text-[#713F12]">{hobby.name}</h4>
+                                                <span class="text-xs font-bold text-slate-500">Started: {hobby.date}</span>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                <button onClick={() => toggleStatus(hobby.id, hobby.status)} class="px-3 py-1.5 bg-slate-100 border-2 border-[#713F12] rounded-lg text-xs font-bold hover:bg-slate-200">Park It ⏸️</button>
+                                                <button onClick={() => handleDelete(hobby.id)} class="px-2 text-rose-400 hover:text-rose-600 font-black">✕</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {state.hyperfixations.filter(h => h.status === 'active').length === 0 && (
+                                        <p class="text-sm font-bold text-slate-400 italic">No active hyperfixations right now. Enjoy the peace.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Parked / Graveyard */}
+                            <div class="lemon-card p-6 bg-slate-50 border-slate-300 space-y-4 shadow-none">
+                                <div class="flex items-center gap-2 border-b-2 border-slate-200 pb-2">
+                                    <span class="text-xl">⏸️</span>
+                                    <h3 class="bubbly-font font-black text-lg text-slate-600">Parked / On Pause</h3>
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase ml-2">(Zero Guilt Zone)</span>
+                                </div>
+                                <div class="space-y-3 pt-2">
+                                    {state.hyperfixations.filter(h => h.status === 'parked').map(hobby => (
+                                        <div key={hobby.id} class="p-4 border-2 border-slate-300 rounded-xl flex justify-between items-center bg-white opacity-70 hover:opacity-100 transition-opacity">
+                                            <div>
+                                                <h4 class="font-black text-base text-slate-600">{hobby.name}</h4>
+                                                <span class="text-xs font-bold text-slate-400">Since: {hobby.date}</span>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                <button onClick={() => toggleStatus(hobby.id, hobby.status)} class="px-3 py-1.5 bg-[#FEF08A] border-2 border-[#713F12] rounded-lg text-xs font-bold text-[#713F12] lemon-btn">Revive 🔥</button>
+                                                <button onClick={() => handleDelete(hobby.id)} class="px-2 text-rose-400 hover:text-rose-600 font-black">✕</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {state.hyperfixations.filter(h => h.status === 'parked').length === 0 && (
+                                        <p class="text-sm font-bold text-slate-400 italic">No parked hobbies. You're fully committed!</p>
+                                    )}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
