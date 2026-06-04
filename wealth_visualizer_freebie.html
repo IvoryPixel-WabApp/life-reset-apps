@@ -15,58 +15,62 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
         
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #F8F9F5; /* Oatmilk background */
-            color: #112A22; /* Deep Emerald/Forest text */
+            font-family: 'Inter', -apple-system, system-ui, -apple-system, sans-serif;
+            background-color: #FAF6F0; /* Warm Cream canvas like Notion/Morandi style */
+            color: rgba(0,0,0,0.92); /* Gentle Warm Near-Black text */
         }
 
         .serif-font {
             font-family: 'Playfair Display', serif;
         }
 
-        /* Aesthetic Soft Brutalism */
+        /* Notion Cozy-Warm Soft Brutalism */
         .freebie-card {
             background-color: #FFFFFF;
-            border: 2px solid #112A22;
-            box-shadow: 4px 4px 0px 0px #A7C4B5; /* Soft Sage shadow */
-            border-radius: 20px;
-            transition: all 0.2s ease;
+            border: 1px solid rgba(0,0,0,0.1); /* Notion whisper-weight thin borders */
+            box-shadow: rgba(0,0,0,0.04) 0px 4px 18px, rgba(0,0,0,0.02) 0px 2px 8px; /* Multi-layered soft shadow */
+            border-radius: 16px;
+            transition: all 0.25s ease;
+        }
+        .freebie-card:hover {
+            transform: translateY(-2px);
+            box-shadow: rgba(0,0,0,0.06) 0px 8px 24px, rgba(0,0,0,0.03) 0px 4px 12px;
         }
         
         .freebie-btn {
-            border: 2px solid #112A22;
-            box-shadow: 3px 3px 0px 0px #112A22;
-            transition: all 0.15s ease;
+            background-color: #0075de; /* Notion signature blue */
+            border: 1px solid transparent;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 4px;
+            transition: all 0.2s ease;
+        }
+        .freebie-btn:hover {
+            background-color: #005bab; /* Hover dark blue */
+            transform: translateY(-1px);
         }
         .freebie-btn:active {
-            transform: translate(3px, 3px);
-            box-shadow: 0px 0px 0px 0px #112A22;
+            transform: scale(0.97);
         }
 
         /* Animated Upsell Banner */
         .upsell-gradient {
-            background: linear-gradient(270deg, #A855F7, #EC4899, #F59E0B);
-            background-size: 400% 400%;
-            animation: gradient-shift 6s ease infinite;
+            background: linear-gradient(135deg, #7BA3A8 0%, #D4956A 100%); /* Morandi Sage & Terracotta palette gradient */
             color: white;
-        }
-        @keyframes gradient-shift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
 
         /* Chart Bar Animations */
         .bar-grow {
-            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #F8F9F5; }
-        ::-webkit-scrollbar-thumb { background: #A7C4B5; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: #FAF6F0; }
+        ::-webkit-scrollbar-thumb { background: #D4956A; border-radius: 4px; } /* Muted terracotta scroll */
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col">
